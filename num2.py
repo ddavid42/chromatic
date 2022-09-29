@@ -39,7 +39,9 @@ class ChNbr:
         else:
             self.idx = -1
             self.tab = tab.copy()
-        
+
+
+
     ## Operations
     def __str__(self):
         """ Convert a Chromatic Number to a string """
