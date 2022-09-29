@@ -1,0 +1,14 @@
+/.vscode
+/__pycache__
+/build
+/eggholderfct.py
+/main.cc
+/numeric.cc
+/numeric.h
+/operations
+/operations.cpp
+/pi.py
+/pi_archimedes.gif:Zone.Identifier
+/test.cpp
+/trisurf3d.py
+/trisurf3d.py:Zone.Identifier
