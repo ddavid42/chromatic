@@ -273,7 +273,7 @@ OriginVector<Type, N>::add(const OriginVector<Type, N>& source,
       std::array<Origin, (2*N)>& new_origins, int& new_origins_size,
       bool is_plus, float& newCoeffWithoutOrigin) const {
    Type newValue = is_plus ? (value + source.value) : (value - source.value);
-   Type totalValue = std::fabs(value) + std::fabs(source.value);
+   Type totalValue = std::fabs(newValue);
    newCoeffWithoutOrigin = coeff_without_origin*std::fabs(value)/totalValue
       + source.coeff_without_origin*std::fabs(source.value)/totalValue;
    int thisIndex = 0, sourceIndex = 0;
