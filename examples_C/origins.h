@@ -280,31 +280,36 @@ OriginVector<Type, N>::add(const OriginVector<Type, N>& source,
    while (thisIndex < origins_size && sourceIndex < source.origins_size) {
       auto compare = origins[thisIndex].compare(source.origins[sourceIndex]);
       if (compare == 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= std::fabs(value)/totalValue;
          new_origins[new_origins_size].coefficient += source.origins[sourceIndex].coefficient*std::fabs(source.value)/totalValue;
+         ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= std::fabs(value)/totalValue;
+         ++new_origins_size;
          ++thisIndex;
       }
       else {
-         new_origins[new_origins_size++] = source.origins[sourceIndex];
+         new_origins[new_origins_size] = source.origins[sourceIndex];
          new_origins[new_origins_size].coefficient *= std::fabs(source.value)/totalValue;
+         ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < origins_size) {
-      new_origins[new_origins_size++] = origins[thisIndex];
+      new_origins[new_origins_size] = origins[thisIndex];
       new_origins[new_origins_size].coefficient *= std::fabs(value)/totalValue;
+      ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.origins_size) {
-      new_origins[new_origins_size++] = source.origins[sourceIndex];
+      new_origins[new_origins_size] = source.origins[sourceIndex];
       new_origins[new_origins_size].coefficient *= std::fabs(source.value)/totalValue;
+      ++new_origins_size;
       ++sourceIndex;
    }
    return newValue;
@@ -350,31 +355,36 @@ OriginVector<Type, N>::mult(const OriginVector<Type, N>& source,
    while (thisIndex < origins_size && sourceIndex < source.origins_size) {
       auto compare = origins[thisIndex].compare(source.origins[sourceIndex]);
       if (compare == 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*origins[thisIndex].coefficient + 0.5*source.origins[sourceIndex].coefficient;
+         ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++thisIndex;
       }
       else {
-         new_origins[new_origins_size++] = source.origins[sourceIndex];
+         new_origins[new_origins_size] = source.origins[sourceIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < origins_size) {
-      new_origins[new_origins_size++] = origins[thisIndex];
+      new_origins[new_origins_size] = origins[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.origins_size) {
-      new_origins[new_origins_size++] = source.origins[sourceIndex];
+      new_origins[new_origins_size] = source.origins[sourceIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++sourceIndex;
    }
    return newValue;
@@ -402,31 +412,36 @@ OriginVector<Type, N>::div(const OriginVector<Type, N>& source,
    while (thisIndex < origins_size && sourceIndex < source.origins_size) {
       auto compare = origins[thisIndex].compare(source.origins[sourceIndex]);
       if (compare == 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*origins[thisIndex].coefficient + 0.5*source.origins[sourceIndex].coefficient;
+         ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++thisIndex;
       }
       else {
-         new_origins[new_origins_size++] = source.origins[sourceIndex];
+         new_origins[new_origins_size] = source.origins[sourceIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < origins_size) {
-      new_origins[new_origins_size++] = origins[thisIndex];
+      new_origins[new_origins_size] = origins[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.origins_size) {
-      new_origins[new_origins_size++] = source.origins[sourceIndex];
+      new_origins[new_origins_size] = source.origins[sourceIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++sourceIndex;
    }
    return newValue;
@@ -519,31 +534,36 @@ OriginVector<Type, N>::atan2(const OriginVector<Type, N>& source,
    while (thisIndex < origins_size && sourceIndex < source.origins_size) {
       auto compare = origins[thisIndex].compare(source.origins[sourceIndex]);
       if (compare == 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*origins[thisIndex].coefficient + 0.5*source.origins[sourceIndex].coefficient;
+         ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++thisIndex;
       }
       else {
-         new_origins[new_origins_size++] = source.origins[sourceIndex];
+         new_origins[new_origins_size] = source.origins[sourceIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < origins_size) {
-      new_origins[new_origins_size++] = origins[thisIndex];
+      new_origins[new_origins_size] = origins[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.origins_size) {
-      new_origins[new_origins_size++] = source.origins[sourceIndex];
+      new_origins[new_origins_size] = source.origins[sourceIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++sourceIndex;
    }
    return newValue;
@@ -570,31 +590,36 @@ OriginVector<Type, N>::pow(const OriginVector<Type, N>& source,
    while (thisIndex < origins_size && sourceIndex < source.origins_size) {
       auto compare = origins[thisIndex].compare(source.origins[sourceIndex]);
       if (compare == 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*origins[thisIndex].coefficient + 0.5*source.origins[sourceIndex].coefficient;
+         ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
-         new_origins[new_origins_size++] = origins[thisIndex];
+         new_origins[new_origins_size] = origins[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++thisIndex;
       }
       else {
-         new_origins[new_origins_size++] = source.origins[sourceIndex];
+         new_origins[new_origins_size] = source.origins[sourceIndex];
          new_origins[new_origins_size].coefficient *= 0.5;
+         ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < origins_size) {
-      new_origins[new_origins_size++] = origins[thisIndex];
+      new_origins[new_origins_size] = origins[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.origins_size) {
-      new_origins[new_origins_size++] = source.origins[sourceIndex];
+      new_origins[new_origins_size] = source.origins[sourceIndex];
       new_origins[new_origins_size].coefficient *= 0.5;
+      ++new_origins_size;
       ++sourceIndex;
    }
    return newValue;
@@ -611,9 +636,9 @@ OriginVector<Type, N>::powAssign(const OriginVector<Type, N>& source) {
 }
 
 struct double_st;
-struct float_st : public OriginVector<float, 12> {
+struct float_st : public OriginVector<float, 20> {
   private:
-   typedef OriginVector<float, 12> inherited;
+   typedef OriginVector<float, 20> inherited;
 
   public:
    float_st() = default;
@@ -623,9 +648,9 @@ struct float_st : public OriginVector<float, 12> {
    float_st(const double_st& source);
 };
 
-struct double_st : public OriginVector<double, 12> {
+struct double_st : public OriginVector<double, 20> {
   private:
-   typedef OriginVector<double, 12> inherited;
+   typedef OriginVector<double, 20> inherited;
 
   public:
    double_st() = default;

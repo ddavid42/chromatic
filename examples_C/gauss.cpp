@@ -65,9 +65,9 @@ int main() {
   printf("\nRequired solution is: \n");
   for (int i = 0; i < n; ++i) {
     printf("X%d value: %e\n", i, x[i].value);
-    printf("Idx\n");
+    printf("Idx : [-1, %e]\n", x[i].coeff_without_origin);
     for (int origin_index = 0; origin_index < x[i].origins_size; ++origin_index)
-      printf("[%ld, %e]\n", x[i].origins[origin_index].symbol_id, x[i].origins[origin_index].coefficient*pow(2.0, 53));
+      printf("[%ld, %e]\n", x[i].origins[origin_index].symbol_id, x[i].origins[origin_index].coefficient);
     printf("\n");
   }
 }
