@@ -37,7 +37,7 @@ int main() {
     for (int j = 0; j < n+1; ++j)
        a[i][j] = OriginDouble(b[i][j], true);
 
-  printf("Initial System");
+  printf("Initial System\n");
   print_np_mat_ChNbr(a);
     
   // Applying Gauss Elimination
