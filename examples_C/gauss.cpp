@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 #include "origins.hpp"
 
 std::atomic<uint64_t> BaseOriginVector::atomic_id_counts = 0;
@@ -21,7 +22,7 @@ print_np_mat_ChNbr(OriginDouble a[n][n+1]) {
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
   double b[n][n+1] = {{ 1/1.,1/2.,1/3.,1/4., 10. },
                       { 1/2.,1/3.,1/4.,1/5., 20. },
                       { 1/3.,1/4.,1/5.,1/6., 30. },
@@ -69,6 +70,25 @@ int main() {
     for (int origin_index = 0; origin_index < x[i].origins_size; ++origin_index)
       printf("[%ld, %e]\n", x[i].origins[origin_index].symbol_id, x[i].origins[origin_index].coefficient);
     printf("\n");
+  }
+
+  // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
+  double heatmap1[n][n+1]{};
+  for (int i = 0; i < n; ++i) {
+     for (int origin=0; origin < x[i].origins_size; ++origin) {
+        uint64_t k = x[i].origins[origin].symbol_id;
+        float v = x[i].origins[origin].coefficient;
+        heatmap1[(k-1)/(n+1)][(k-1)%(n+1)] += v;
+     }
+  }
+
+  if (argc > 1) {
+     std::ofstream out(argv[1]);
+     for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j)
+            out << heatmap1[i][j] << ", ";
+        out << heatmap1[i][n] << '\n';
+     }
   }
 }
 
