@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 #include "origins.hpp"
 
 std::atomic<uint64_t> BaseOriginVector::atomic_id_counts = 0;
@@ -10,7 +11,7 @@ print_np_mat_ChNbr(OriginDouble a[n][n+1]) {
   printf("INDEX\n");
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n+1; ++j)
-      printf("%5ld ", a[i][j].origins[0].symbol_id);
+      printf("%5ld ", a[i][j].contributions[0].symbol_id);
     printf("\n");
   }
   printf("VALUE\n");
@@ -21,7 +22,7 @@ print_np_mat_ChNbr(OriginDouble a[n][n+1]) {
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
   double b[n][n+1] = {{ 1/1.,1/2.,1/3.,1/4., 10. },
                       { 1/2.,1/3.,1/4.,1/5., 20. },
                       { 1/3.,1/4.,1/5.,1/6., 30. },
@@ -65,10 +66,29 @@ int main() {
   printf("\nRequired solution is: \n");
   for (int i = 0; i < n; ++i) {
     printf("X%d value: %e\n", i, x[i].value);
-    printf("Idx : [-1, %e]\n", x[i].coeff_without_origin);
-    for (int origin_index = 0; origin_index < x[i].origins_size; ++origin_index)
-      printf("[%ld, %e]\n", x[i].origins[origin_index].symbol_id, x[i].origins[origin_index].coefficient);
+    printf("Idx : [-1, %e]\n", x[i].contribution_without_origin);
+    for (int origin_index = 0; origin_index < x[i].contributions_size; ++origin_index)
+      printf("[%ld, %e]\n", x[i].contributions[origin_index].symbol_id, x[i].contributions[origin_index].coefficient);
     printf("\n");
+  }
+
+  // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
+  double heatmap1[n][n+1]{};
+  for (int i = 0; i < n; ++i) {
+     for (int origin=0; origin < x[i].contributions_size; ++origin) {
+        uint64_t k = x[i].contributions[origin].symbol_id;
+        float v = x[i].contributions[origin].coefficient;
+        heatmap1[(k-1)/(n+1)][(k-1)%(n+1)] += v;
+     }
+  }
+
+  if (argc > 1) {
+     std::ofstream out(argv[1]);
+     for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j)
+            out << heatmap1[i][j] << ", ";
+        out << heatmap1[i][n] << '\n';
+     }
   }
 }
 
