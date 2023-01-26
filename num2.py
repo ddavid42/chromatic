@@ -40,6 +40,12 @@ class ChNbr:
             self.idx = -1
             self.tab = tab.copy()
 
+    def __repr__(self):
+        s = "value: " + str(self.val) + ", "
+        s+= "Idx  : " + str(self.idx)
+        for k,v in self.tab.items():
+            s+= ", [" + str(k) + "," + str(v) + "]"
+        return s
 
 
     ## Operations
@@ -61,6 +67,8 @@ class ChNbr:
         lhs = self
         
         if type(other) is not ChNbr:
+            if not np.isscalar(other):
+                return other+self
             rhs = ChNbr(other)
         else:
             rhs = other
@@ -112,6 +120,8 @@ class ChNbr:
         lhs = self
         
         if type(other) is not ChNbr:
+            if not np.isscalar(other):
+                return other*self
             rhs = ChNbr(other)
         else:
             rhs = other
@@ -223,6 +233,15 @@ class ChNbr:
     def sqrt(nbr1,nbr2):
         nbr = ChNbr(sqrt(nbr2.val))
         nbr.tab = nbr2.tab.copy()
+        return nbr 
+
+    def tanh(self):
+        nbr = ChNbr(tanh(self.val))
+        nbr.tab = self.tab.copy()
+        return nbr 
+    def __pow__(self, exponent : int):
+        nbr = ChNbr(pow(self.val, exponent))
+        nbr.tab = self.tab.copy()
         return nbr 
 
 #c1=ChNbr(1, follow=True)
