@@ -782,3 +782,14 @@ inline OriginDouble operator/(OriginFloat&& first, OriginDouble&& second)
    return result;
 }
 
+#ifdef _ORIGINS
+typedef float old_float;
+typedef double old_double;
+
+#define float OriginFloat
+#define double OriginDouble
+
+#ifdef _ORIGINS_MAIN
+std::atomic<uint64_t> BaseOriginVector::atomic_id_counts = {0};
+#endif
+#endif

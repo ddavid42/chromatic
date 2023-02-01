@@ -2,14 +2,11 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
-#include "origins.hpp"
 #include "mmio.h"
 
-std::atomic<uint64_t> BaseOriginVector::atomic_id_counts = {0};
-
-static const int n = 4;
+#ifdef _ORIGINS
 void
-print_np_mat_ChNbr(OriginDouble a[n][n+1]) {
+print_np_mat_ChNbr(double** a/*[n][n+1]*/, int n) {
   printf("INDEX\n");
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n+1; ++j)
@@ -23,15 +20,15 @@ print_np_mat_ChNbr(OriginDouble a[n][n+1]) {
     printf("\n");
   }
 }
+#endif
 
 
-void read_matrix(char *input, std::vector< std::vector<OriginDouble> >& a){
+void read_matrix(char *input, std::vector< std::vector<double> >& a){
   FILE *in;
   MM_typecode matcode;
   int ret_code;
   int M, N;   
   int i, j, nz;
-  double v;
 
   if ((in = fopen(input, "r")) == NULL) 
       exit(1);
@@ -66,12 +63,21 @@ void read_matrix(char *input, std::vector< std::vector<OriginDouble> >& a){
 
 
   for (int k=0; k<nz; k++){
+#ifdef _ORIGINS
+    old_double v;
+#else
+    double v;
+#endif
     // Reading augmented matrix coefficients
     fscanf(in, "%d %d %lg\n", &i, &j, &v);
     /* adjust from 1-based to 0-based */
     i-=1; j-=1;
     // printf("%d %d %d %e \n",k,i,j,v);
-    a[i][j]=OriginDouble(v, true);
+#ifdef _ORIGINS
+    a[i][j]=double(v, true);
+#else
+    a[i][j]= v;
+#endif
   }
 
   if (in !=stdin) fclose(in);
@@ -88,18 +94,21 @@ int main(int argc, char** argv) {
 		exit(1);
 	} 
   
-  std::vector<std::vector<OriginDouble>> a;
+  std::vector<std::vector<double>> a;
 
   read_matrix(argv[1], a);
   N = a.size();
-  OriginDouble x[N];
+  double x[N];
   memset(x, 0, sizeof(x));
 
   
   // Set an arbitrary vector results
   for (int i = 0; i < N; ++i)
-    a[i][N] = OriginDouble(i, true);
-
+#ifdef _ORIGINS
+    a[i][N] = double(i, true);
+#else
+    a[i][N] = i;
+#endif
     
   // Applying Gauss Elimination
   for (int i = 0; i < N; ++i) {
@@ -109,7 +118,7 @@ int main(int argc, char** argv) {
       exit(1);
     }
     for (int j = i+1; j < N; ++j) {
-      OriginDouble ratio = a[j][i]/a[i][i];
+      double ratio = a[j][i]/a[i][i];
       for (int k = 0; k < N+1; ++k)
         a[j][k] = a[j][k] - ratio * a[i][k];
     }
@@ -119,7 +128,7 @@ int main(int argc, char** argv) {
   x[N-1] = a[N-1][N]/a[N-1][N-1];
 
   for (int i = N-2; i >= 0; --i) {
-    x[i] = a[i][n];
+    x[i] = a[i][N];
     for (int j = i+1; j < N; ++j)
        x[i] = x[i] - a[i][j]*x[j];
     x[i] = x[i]/a[i][i];
@@ -128,36 +137,42 @@ int main(int argc, char** argv) {
   // Displaying solution
   printf("\nRequired solution is: \n");
   for (int i = 0; i < N; ++i) {
+#ifdef _ORIGINS
     printf("X%d value: %e\n", i, x[i].value);
     printf("Idx : [-1, %e]\n", x[i].contribution_without_origin);
     for (int origin_index = 0; origin_index < x[i].contributions_size; ++origin_index)
       printf("[%ld, %e]\n", x[i].contributions[origin_index].symbol_id, x[i].contributions[origin_index].coefficient);
+#else
+    printf("X%d value: %e\n", i, x[i]);
+#endif
     printf("\n");
   }
 
+#ifdef _ORIGINS
   // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
-  double heatmap1[N][N+1]{};
+  old_double heatmap1[N][N+1]{};
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        float v = x[i].contributions[origin].coefficient;
+        old_float v = x[i].contributions[origin].coefficient;
         heatmap1[(k-1)/(N+1)][(k-1)%(N+1)] += v;
      }
   }
 
-  if (argc > 1) {
+  if (argc > 2) {
      std::ofstream out(argv[2]);
      if ( out.is_open() )
         std::cout<<"File " << argv[2] <<" opened"<<std::endl;
      for (int i = 0; i < N; ++i) {
         for (int j = 0; j < N; ++j)
             out << heatmap1[i][j] << ", ";
-        out << heatmap1[i][n] << '\n';
+        out << heatmap1[i][N] << '\n';
      }
      if ( out.is_open() ){
         std::cout<<"File " << argv[2] <<" closed"<<std::endl;
         out.close();
      }
   }
+#endif
 }
 
