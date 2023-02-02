@@ -7,9 +7,9 @@
 */
 
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <ctype.h>
 
 #include "mmio.h"
@@ -63,6 +63,7 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
     I = (int *) malloc(nz * sizeof(int));
     J = (int *) malloc(nz * sizeof(int));
     val = (double *) malloc(nz * sizeof(double));
+    memset(val, 0, nz * sizeof(double));
  
     *val_ = val;
     *I_ = I;
@@ -74,7 +75,13 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
  
     for (i=0; i<nz; i++)
     {
+#ifdef _ORIGINS
+        old_double v;
+        fscanf(f, "%d %d %lg\n", &I[i], &J[i], &v);
+        val[i] = v;
+#else
         fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
+#endif
         I[i]--;  /* adjust from 1-based to 0-based */
         J[i]--;
     }
@@ -268,17 +275,30 @@ int mm_read_mtx_crd_data(FILE *f, int M, int N, int nz, int I[], int J[],
     int i;
     if (mm_is_complex(matcode))
     {
-        for (i=0; i<nz; i++)
-            if (fscanf(f, "%d %d %lg %lg", &I[i], &J[i], &val[2*i], &val[2*i+1])
-                != 4) return MM_PREMATURE_EOF;
+#ifdef _ORIGINS
+        old_double v1, v2;
+#else
+        double v1, v2;
+#endif
+        for (i=0; i<nz; i++) {
+            if (fscanf(f, "%d %d %lg %lg", &I[i], &J[i], &v1, &v2) != 4)
+                return MM_PREMATURE_EOF;
+            val[2*i] = v1;
+            val[2*i+1] = v2;
+        }
     }
     else if (mm_is_real(matcode))
     {
+#ifdef _ORIGINS
+        old_double v1;
+#else
+        double v1;
+#endif
         for (i=0; i<nz; i++)
         {
-            if (fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i])
-                != 3) return MM_PREMATURE_EOF;
-
+            if (fscanf(f, "%d %d %lg\n", &I[i], &J[i], &v1) != 3)
+                return MM_PREMATURE_EOF;
+            val[i] = v1;
         }
     }
 
@@ -300,14 +320,26 @@ int mm_read_mtx_crd_entry(FILE *f, int *I, int *J,
 {
     if (mm_is_complex(matcode))
     {
-            if (fscanf(f, "%d %d %lg %lg", I, J, real, imag)
-                != 4) return MM_PREMATURE_EOF;
+#ifdef _ORIGINS
+            old_double v1, v2;
+#else
+            double v1, v2;
+#endif
+            if (fscanf(f, "%d %d %lg %lg", I, J, &v1, &v2) != 4)
+                return MM_PREMATURE_EOF;
+            *real = v1;
+            *imag = v2;
     }
     else if (mm_is_real(matcode))
     {
-            if (fscanf(f, "%d %d %lg\n", I, J, real)
-                != 3) return MM_PREMATURE_EOF;
-
+#ifdef _ORIGINS
+            old_double v1;
+#else
+            double v1;
+#endif
+            if (fscanf(f, "%d %d %lg\n", I, J, &v1) != 3)
+                return MM_PREMATURE_EOF;
+            *real = v1;
     }
 
     else if (mm_is_pattern(matcode))
@@ -360,6 +392,7 @@ int mm_read_mtx_crd(char *fname, int *M, int *N, int *nz, int **I, int **J,
     if (mm_is_complex(*matcode))
     {
         *val = (double *) malloc(*nz * 2 * sizeof(double));
+        memset(*val, 0, *nz * 2 * sizeof(double));
         ret_code = mm_read_mtx_crd_data(f, *M, *N, *nz, *I, *J, *val, 
                 *matcode);
         if (ret_code != 0) return ret_code;
@@ -367,6 +400,7 @@ int mm_read_mtx_crd(char *fname, int *M, int *N, int *nz, int **I, int **J,
     else if (mm_is_real(*matcode))
     {
         *val = (double *) malloc(*nz * sizeof(double));
+        memset(*val, 0, *nz * sizeof(double));
         ret_code = mm_read_mtx_crd_data(f, *M, *N, *nz, *I, *J, *val, 
                 *matcode);
         if (ret_code != 0) return ret_code;
@@ -422,12 +456,19 @@ int mm_write_mtx_crd(char fname[], int M, int N, int nz, int I[], int J[],
     else
     if (mm_is_real(matcode))
         for (i=0; i<nz; i++)
+#ifdef _ORIGINS
+            fprintf(f, "%d %d %20.16g\n", I[i], J[i], val[i].value);
+#else
             fprintf(f, "%d %d %20.16g\n", I[i], J[i], val[i]);
+#endif
     else
     if (mm_is_complex(matcode))
         for (i=0; i<nz; i++)
-            fprintf(f, "%d %d %20.16g %20.16g\n", I[i], J[i], val[2*i], 
-                        val[2*i+1]);
+#ifdef _ORIGINS
+            fprintf(f, "%d %d %20.16g %20.16g\n", I[i], J[i], val[2*i].value, val[2*i+1].value);
+#else
+            fprintf(f, "%d %d %20.16g %20.16g\n", I[i], J[i], val[2*i], val[2*i+1]);
+#endif
     else
     {
         if (f != stdout) fclose(f);
@@ -455,7 +496,7 @@ char *mm_strdup(const char *s)
 char  *mm_typecode_to_str(MM_typecode matcode)
 {
     char buffer[MM_MAX_LINE_LENGTH];
-    char *types[4];
+    const char *types[4];
 	char *mm_strdup(const char *);
     int error =0;
 
