@@ -1,7 +1,7 @@
 # Importing NumPy Library
 import sys
 sys.path.append('../../..')
-sys.path.append('/home/ddefour/interflop/chromatic/')
+sys.path.append('/home/ddefour/interflop/chromatic/include')
 import numpy as np
 import matplotlib.pylab as plt
 import seaborn as sns               # For the automatic handling of gradient for the heatmap  
@@ -94,8 +94,10 @@ for i in range(n):
     for j in range(i+1, n):
         ratio = a[j][i]/a[i][i]
         
-        for k in range(n+1):
+        for k in range(i+1,n+1):
             a[j][k] = a[j][k] - ratio * a[i][k]
+        
+        a[j][i]=0
 
 
 # Back Substitution

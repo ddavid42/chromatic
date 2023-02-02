@@ -76,6 +76,12 @@ class ChNbr:
                         self.tab[-2]  = tab[key]
 
 
+    def __repr__(self):
+        s = "value: " + str(self.val) + ", "
+        s+= "Idx  : " + str(self.idx)
+        for k,v in self.tab.items():
+            s+= ", [" + str(k) + "," + str(v) + "]"
+        return s
 
     ## Operations
     def __str__(self):
@@ -96,6 +102,8 @@ class ChNbr:
         lhs = self
         
         if type(other) is not ChNbr:
+            if not np.isscalar(other):
+                return other+self
             rhs = ChNbr(other)
         else:
             rhs = other
@@ -113,14 +121,14 @@ class ChNbr:
         if res != 0:
             coef = fabs(left/res)
         else:
-            coef = 1
+            coef = float('inf')
         for i,t in lhs.tab.items():
             tab[i] = coef*t
 
         if res != 0:
             coef = fabs(right/res)
         else:
-            coef = 1  
+            coef = float('inf')  
 
         for i,t in rhs.tab.items():
             if i in tab:
@@ -150,7 +158,15 @@ class ChNbr:
         lhs = self
         
         if type(other) is not ChNbr:
-            rhs = ChNbr(other)
+            # Handle special cases
+            if not np.isscalar(other):
+                return other*self
+            elif other==0:
+                return 0
+            elif other==1:
+                return ChNbr(self.val, self.tab)
+            else:
+                rhs = ChNbr(other)
         else:
             rhs = other
 
@@ -182,7 +198,13 @@ class ChNbr:
         lhs = self
         
         if type(other) is not ChNbr:
-            rhs = ChNbr(other)
+            # Handle special cases
+            if other==0:
+                return float('inf')
+            elif other==1:
+                return ChNbr(self.val, self.tab)
+            else:
+                rhs = ChNbr(other)
         else:
             rhs = other
 
@@ -206,6 +228,12 @@ class ChNbr:
 
     def __rtruediv__(self, other):
         """ (A)/(B) with B a chromatic numbers and A is not """
+        
+        if type(self) is not ChNbr:
+            # Handle special cases
+            if self==0:
+                return (0/other.val)
+
         return ((ChNbr(1)/self) * other) 
 
 
@@ -257,4 +285,25 @@ class ChNbr:
     def sqrt(nbr1,nbr2):
         nbr = ChNbr(sqrt(nbr2.val))
         nbr.tab = nbr2.tab.copy()
+        return nbr 
+
+    def tanh(self):
+        own_contrib = abs(0.5*self.val*(1.0 - tanh(self.val)**2))
+        nbr = ChNbr(tanh(self.val))
+        nbr.tab = self.tab.copy()
+        if own_contrib < abs(nbr.val):
+            for i, t in nbr.tab.items():
+                nbr.tab[i] *= (own_contrib)/abs(nbr.val)
+            if not(-1 in nbr.tab):
+                nbr.tab[-1] = 0.0
+            nbr.tab[-1] += (abs(nbr.val) - own_contrib)/abs(nbr.val)
+        return nbr 
+
+    def __pow__(self, exponent : int):
+        nbr = ChNbr(pow(self.val, exponent))
+        nbr.tab = self.tab.copy()
+    
+    def __pow__(self, exponent : int):
+        nbr = ChNbr(pow(self.val, exponent))
+        nbr.tab = self.tab.copy()
         return nbr 

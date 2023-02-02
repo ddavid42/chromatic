@@ -1,6 +1,8 @@
 # Importing NumPy Library
 import sys
 sys.path.append('../../..')
+sys.path.append('/home/ddefour/interflop/chromatic/include')
+
 import numpy as np
 
 from io import StringIO             # To import matrix in martrixmarket format
@@ -51,9 +53,10 @@ def Gauss( a, x , n):
         for j in range(i+1, n):
             ratio = a[j][i]/a[i][i]
             
-            for k in range(n+1):
+            for k in range(i+1,n+1):
                 a[j][k] = a[j][k] - ratio * a[i][k]
 
+            a[j][i]=0
 
     # Back Substitution
     x[n-1] = a[n-1][n]/a[n-1][n-1]
@@ -78,7 +81,7 @@ tracemalloc.start()
 # b = np.array([[1.,1.,2.],[1.,1.001,2]])
 
 #m = mmread('bcspwr01.mtx.gz')
-m = mmread('bcsstk14.mtx.gz')
+m = mmread('/home/ddefour/interflop/chromatic/examples/example_py/linalg/bcsstk14.mtx.gz')
 if (m.A.shape[0] == m.A.shape[1]):
     n = m.A.shape[1]
     print("Handling matrix of shape :", m.A.shape)
@@ -90,58 +93,40 @@ a = np.array(m.A)
 b = np.array([i for i in range(n)])
 
 
-start = time.perf_counter()
-x = np.linalg.solve(a, b)
-end = time.perf_counter()
-print(f"\n#(Linalg) Time taken is {end - start}")
+#start = time.perf_counter()
+#x = np.linalg.solve(a, b)
+#end = time.perf_counter()
+#print(f"\n#(Linalg) Time taken is {end - start}")
 
-aa = np.zeros((n,n), dtype=np.dtype(ChNbr))
-bb = np.zeros((n), dtype=np.dtype(ChNbr))
-# Reading augmented matrix coefficients
-for i in range(n):
-    for j in range(n):
-        aa[i][j] = ChNbr(a[i][j],follow=True)
-        #aa[i][j] = a[i][j]
 
-for i in range(n):
-    #bb[i] = b[i]
-    bb[i] = ChNbr(b[i],follow=True)
-
-start = time.perf_counter()
-xx = np.linalg.solve(aa, bb)
-end = time.perf_counter()
-
-print(f"\n#(Linalg 2) Time taken is {end - start}")
-
-exit()
 
 # Making numpy array of n x n+1 size and initializing 
 # to zero for storing augmented matrix
-#a = np.zeros((n,n+1), dtype=np.dtype(ChNbr))
-a = np.zeros((n,n+1), dtype=np.dtype(float))
+a_ch = np.zeros((n,n+1), dtype=np.dtype(ChNbr))
 
 # Making numpy array of n size and initializing 
 # to zero for storing solution vector
-#x = np.zeros(n, dtype=np.dtype(ChNbr))
-x = np.zeros(n, dtype=np.dtype(float))
+x_ch = np.zeros(n, dtype=np.dtype(ChNbr))
 
 # Reading augmented matrix coefficients
 for i in range(n):
     for j in range(n):
-        #a[i][j] = ChNbr(b[i][j],follow=True)
-        a[i][j] = b[i][j]
+        if a[i][j] != 0:
+            a_ch[i][j] = ChNbr(a[i][j],follow=True)
+        else:
+            a_ch[i][j] = 0.0
     # last column B vector
-    #a[i][n]=ChNbr(float(i+1),follow=True)
-    a[i][n]=float(i+1)
-
+    a_ch[i][n]=ChNbr(float(i+1),follow=True)
+    
+for i in range(n):
+    x_ch[i] = ChNbr(i,follow=True)
 
 #print("Initial System")
 #print_np_mat_ChNbr(a)
  
-Gauss( a, x, n )
 
-
-
+start = time.perf_counter()
+Gauss( a_ch, x_ch, n )
 end = time.perf_counter()
 
 snapshot = tracemalloc.take_snapshot()
