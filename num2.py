@@ -236,9 +236,17 @@ class ChNbr:
         return nbr 
 
     def tanh(self):
+        own_contrib = abs(0.5*self.val*(1.0 - tanh(self.val)**2))
         nbr = ChNbr(tanh(self.val))
         nbr.tab = self.tab.copy()
+        if own_contrib < abs(nbr.val):
+            for i, t in nbr.tab.items():
+                nbr.tab[i] *= (own_contrib)/abs(nbr.val)
+            if not(-1 in nbr.tab):
+                nbr.tab[-1] = 0.0
+            nbr.tab[-1] += (abs(nbr.val) - own_contrib)/abs(nbr.val)
         return nbr 
+
     def __pow__(self, exponent : int):
         nbr = ChNbr(pow(self.val, exponent))
         nbr.tab = self.tab.copy()

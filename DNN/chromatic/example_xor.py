@@ -8,11 +8,11 @@ from losses import mse, mse_prime
 from common import ChNbr
 
 # training data
-x_train = np.array([[[ChNbr(0, follow=True),ChNbr(0, follow=True)]],
-    [[ChNbr(0, follow=True),ChNbr(1, follow=True)]],
-    [[ChNbr(1, follow=True),ChNbr(0, follow=True)]],
+x_train = np.array([[[ChNbr(0.01, follow=True),ChNbr(0.01, follow=True)]],
+    [[ChNbr(0.01, follow=True),ChNbr(1, follow=True)]],
+    [[ChNbr(1, follow=True),ChNbr(0.01, follow=True)]],
     [[ChNbr(1, follow=True),ChNbr(1, follow=True)]]])
-y_train = np.array([[[ChNbr(0, follow=True)]], [[ChNbr(1, follow=True)]], [[ChNbr(1, follow=True)]], [[ChNbr(0, follow=True)]]])
+y_train = np.array([[[ChNbr(0.01, follow=True)]], [[ChNbr(1, follow=True)]], [[ChNbr(1, follow=True)]], [[ChNbr(0.01, follow=True)]]])
 
 # network
 net = Network()
@@ -23,7 +23,7 @@ net.add(ActivationLayer(tanh, tanh_prime))
 
 # train
 net.use(mse, mse_prime)
-net.fit(x_train, y_train, epochs=1000, learning_rate=ChNbr(0.1))
+net.fit(x_train, y_train, epochs=1000, learning_rate=ChNbr(0.1, follow=True))
 
 # test
 out = net.predict(x_train)
