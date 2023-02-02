@@ -113,6 +113,7 @@ int main(int argc, char** argv) {
   // Applying Gauss Elimination
   for (int i = 0; i < N; ++i) {
     printf("Gauss, line :%d\n",i);
+    fflush(stdout);
     if (a[i][i] == 0.0){
       printf("Gaussian elemination not possible a[i][i] == 0.0 for i= %d\n",i);
       exit(1);
@@ -135,7 +136,7 @@ int main(int argc, char** argv) {
   }
 
   // Displaying solution
-  printf("\nRequired solution is: \n");
+  printf("\nRequired solution for %d is: \n", N);
   for (int i = 0; i < N; ++i) {
 #ifdef _ORIGINS
     printf("X%d value: %e\n", i, x[i].value);
@@ -146,16 +147,19 @@ int main(int argc, char** argv) {
     printf("X%d value: %e\n", i, x[i]);
 #endif
     printf("\n");
+    fflush(stdout);
   }
 
 #ifdef _ORIGINS
   // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
-  old_double heatmap1[N][N+1]{};
+  old_double* heatmap1 = new old_double[N*(N+1)]{};
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
+        printf("%lu, %d, %d, %d\n", k, N, (k-1)/(N+1), (k-1)%(N+1));
+        fflush(stdout);
         old_float v = x[i].contributions[origin].coefficient;
-        heatmap1[(k-1)/(N+1)][(k-1)%(N+1)] += v;
+        heatmap1[(k-1)/(N+1)*(N+1) + (k-1)%(N+1)] += v;
      }
   }
 
@@ -165,14 +169,15 @@ int main(int argc, char** argv) {
         std::cout<<"File " << argv[2] <<" opened"<<std::endl;
      for (int i = 0; i < N; ++i) {
         for (int j = 0; j < N; ++j)
-            out << heatmap1[i][j] << ", ";
-        out << heatmap1[i][N] << '\n';
+            out << heatmap1[i*(N+1)+j] << ", ";
+        out << heatmap1[i*(N+1)+N] << '\n';
      }
      if ( out.is_open() ){
         std::cout<<"File " << argv[2] <<" closed"<<std::endl;
         out.close();
      }
   }
+  delete [] heatmap1;
 #endif
 }
 

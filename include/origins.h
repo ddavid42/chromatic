@@ -477,8 +477,8 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
       if (compare == 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
-         new_origins[new_origins_size].coefficient *= std::fabs(value)/totalValue;
-         new_origins[new_origins_size].coefficient += source.contributions[sourceIndex].coefficient*std::fabs(source.value)/totalValue;
+         new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(value)/totalValue : 1.0;
+         new_origins[new_origins_size].coefficient += totalValue != 0 ? source.contributions[sourceIndex].coefficient*std::fabs(source.value)/totalValue : 1.0;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
