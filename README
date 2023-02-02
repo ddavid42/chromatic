@@ -1,0 +1,20 @@
+# Chromatic Number
+
+# USAGES:
+>cmake CmakeLists
+
+directories structures
+- include: contains C++ and Python files related to chromatic numbers 
+
+
+# C++ Examples:
+Located in examples/examples_C
+
+### Gauss_Simple
+Simple gaussian elimination
+
+### Gauss_matrixmarket
+Gaussian elimination on matrix from matrixmarket
+
+
+# Python Examples:
