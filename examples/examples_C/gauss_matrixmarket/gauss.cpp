@@ -75,7 +75,8 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
     i-=1; j-=1;
     // printf("%d %d %d %e \n",k,i,j,v);
 #ifdef _ORIGINS
-    a[i][j]=double(v, true);
+//  a[i][j]=double(v, true);
+    a[i][j]= v;
 #else
     a[i][j]= v;
 #endif

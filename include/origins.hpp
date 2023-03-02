@@ -17,16 +17,16 @@ class OriginFloat : public float_st {
 
   public:
    OriginFloat() {}
-   OriginFloat(float val, bool)
-      : inherited(val, true) {}
-   OriginFloat(double val, bool)
-      : inherited(val, true) {}
-   OriginFloat(const char* val, bool)
-      : inherited(::atof(val), true) {}
-   OriginFloat(int val, bool)
-      : inherited(val, true) {}
-   OriginFloat(long long int val, bool)
-      : inherited(val, true) {}
+   OriginFloat(float val, bool doesTrack=false)
+      : inherited(val, doesTrack) {}
+   OriginFloat(double val, bool doesTrack=false)
+      : inherited(val, doesTrack) {}
+   OriginFloat(const char* val, bool doesTrack=false)
+      : inherited(::atof(val), doesTrack) {}
+   OriginFloat(int val, bool doesTrack=false)
+      : inherited(val, doesTrack) {}
+   OriginFloat(long long int val, bool doesTrack=false)
+      : inherited(val, doesTrack) {}
    OriginFloat(const OriginFloat&) = default;
    OriginFloat(OriginFloat&& source) = default;
    OriginFloat(const OriginDouble& source);
@@ -35,6 +35,10 @@ class OriginFloat : public float_st {
    OriginFloat(float min, float max, double err)
       : inherited((min+max)/2.0, true) {}
 
+   OriginFloat& operator=(float val) { return (OriginFloat&) inherited::operator=(OriginFloat(val)); }
+   OriginFloat& operator=(double val) { return (OriginFloat&) inherited::operator=(OriginFloat(val)); }
+   OriginFloat& operator=(int val) { return (OriginFloat&) inherited::operator=(OriginFloat(val)); }
+   OriginFloat& operator=(long long int val) { return (OriginFloat&) inherited::operator=(OriginFloat(val)); }
    OriginFloat& operator=(const OriginFloat&) = default;
    OriginFloat& operator=(OriginFloat&& source) = default;
    OriginFloat& operator=(const OriginDouble&);
@@ -310,10 +314,10 @@ class OriginDouble : public double_st {
 
   public:
    OriginDouble() {}
-   OriginDouble(double val, bool) : inherited(val, true) {}
-   OriginDouble(const char* val, bool) : inherited(::atof(val), true) {}
-   OriginDouble(int val, bool) : inherited(val, true) {}
-   OriginDouble(long long int val) : inherited(val, true) {}
+   OriginDouble(double val, bool doesTrack=false) : inherited(val, doesTrack) {}
+   OriginDouble(const char* val, bool doesTrack=false) : inherited(::atof(val), doesTrack) {}
+   OriginDouble(int val, bool doesTrack=false) : inherited(val, doesTrack) {}
+   OriginDouble(long long int val, bool doesTrack=false) : inherited(val, doesTrack) {}
    OriginDouble(const OriginDouble&) = default;
    OriginDouble(OriginDouble&& source) = default;
    OriginDouble(const OriginFloat& source)
@@ -323,6 +327,9 @@ class OriginDouble : public double_st {
    OriginDouble(double min, double max);
    OriginDouble(double min, double max, double err, unsigned instructionId, unsigned typeId);
 
+   OriginDouble& operator=(double val) { return (OriginDouble&) inherited::operator=(OriginDouble(val)); }
+   OriginDouble& operator=(int val) { return (OriginDouble&) inherited::operator=(OriginDouble(val)); }
+   OriginDouble& operator=(long long int val) { return (OriginDouble&) inherited::operator=(OriginDouble(val)); }
    OriginDouble& operator=(const OriginDouble&) = default;
    OriginDouble& operator=(OriginDouble&& source) = default;
    OriginDouble& operator=(OriginFloat&& source);

@@ -1203,8 +1203,8 @@ struct float_st : public OriginVector<float, 20> {
 
   public:
    float_st() = default;
-   float_st(const float& avalue, bool)
-      :  inherited(avalue, true) {}
+   float_st(const float& avalue, bool doesTrack=false)
+      :  inherited(avalue, doesTrack) {}
    float_st(const float_st& source) = default;
    float_st(const double_st& source);
 };
@@ -1215,8 +1215,8 @@ struct double_st : public OriginVector<double, 20> {
 
   public:
    double_st() = default;
-   double_st(const double& avalue, bool)
-      :  inherited(avalue, true) {}
+   double_st(const double& avalue, bool doesTrack=false)
+      :  inherited(avalue, doesTrack) {}
    double_st(const double_st& source) = default;
    double_st(const float_st& source);
 };
