@@ -3,7 +3,6 @@
 #include <fstream>
 #include <vector>
 #include <time.h>
-#include "origins.hpp"
 #include "mmio.h"
 
 #ifdef _ORIGINS
@@ -115,7 +114,7 @@ int main(int argc, char** argv) {
   start = clock(); /* Lancement de la mesure */
 
   // Applying Gauss Elimination
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < N; ++i) {
     printf("Gauss, line :%d\n",i);
     fflush(stdout);
     if (a[i][i] == 0.0){
@@ -139,7 +138,11 @@ int main(int argc, char** argv) {
     x[i] = x[i]/a[i][i];
   }
   end = clock();  /* Arret de la mesure */
+#ifdef _ORIGINS
+  printf("\nTIME: %lf",((old_double)end - start) / CLOCKS_PER_SEC);
+#else
   printf("\nTIME: %lf",((double)end - start) / CLOCKS_PER_SEC);
+#endif
   // Displaying solution
   printf("\nRequired solution for %d is: \n", N);
   for (int i = 0; i < N; ++i) {
@@ -161,7 +164,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        printf("%lu, %d, %d, %d\n", k, N, (k-1)/(N+1), (k-1)%(N+1));
+        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/(N+1)), (int)((k-1)%(N+1)));
         fflush(stdout);
         old_float v = x[i].contributions[origin].coefficient;
         heatmap1[(k-1)/(N+1)*(N+1) + (k-1)%(N+1)] += v;

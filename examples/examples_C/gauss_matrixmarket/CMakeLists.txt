@@ -3,8 +3,10 @@ add_executable(gauss_matrixmarket mmio.cpp gauss.cpp ${HEADER_FILES})
 target_compile_features(gauss_matrixmarket PRIVATE cxx_std_17)
 
 # Add all headers files under the include directory
-target_include_directories(gauss_matrixmarket PRIVATE ../../../include)
-target_compile_definitions(gauss_matrixmarket PRIVATE _ORIGINS)
-target_compile_options(gauss_matrixmarket PRIVATE -include "origins.hpp")
-set_source_files_properties(gauss.cpp PROPERTIES COMPILE_FLAGS -D_ORIGINS_MAIN)
+if (NOT WITHOUT_ORIGINS)
+  target_include_directories(gauss_matrixmarket PRIVATE ../../../include)
+  target_compile_definitions(gauss_matrixmarket PRIVATE _ORIGINS)
+  target_compile_options(gauss_matrixmarket PRIVATE -include "origins.hpp")
+  set_source_files_properties(gauss.cpp PROPERTIES COMPILE_FLAGS -D_ORIGINS_MAIN)
+endif()
 
