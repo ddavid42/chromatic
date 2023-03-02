@@ -105,12 +105,22 @@ int main(int argc, char** argv) {
 
   
   // Set an arbitrary vector results
-  for (int i = 0; i < N; ++i)
+  for (int seg = 0; seg <= 10; ++seg) {
 #ifdef _ORIGINS
-    a[i][N] = double(i, true);
-#else
-    a[i][N] = i;
+    double ref_val(1.0, true);
 #endif
+    for (int j = 0; j < N/10; ++j) {
+      int i = (N/10)*seg + j;
+      if (i >= N)
+        break;
+#ifdef _ORIGINS
+      a[i][N] = ref_val;
+      a[i][N].value = i;
+#else
+      a[i][N] = i;
+#endif
+    }
+  }
   start = clock(); /* Lancement de la mesure */
 
   // Applying Gauss Elimination
