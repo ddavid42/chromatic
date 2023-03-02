@@ -1,0 +1,24 @@
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DWITHOUT_ORIGINS=ON ..
+make
+# normal execution
+./gauss_matrixmarket ../bcsstk14.mtx
+cd ..
+
+mkdir build_origins_matrix
+cd build_origins_matrix
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DWITH_MATRIX=ON ..
+make
+# execution and follows 4x4 rectangles of the matrix
+./gauss_matrixmarket ../bcsstk14.mtx data.out
+cd ..
+
+mkdir build_origins_input_vector
+cd build_origins_input_vector
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DWITH_INPUT_VECTOR=ON ..
+make
+# execution and follows 11 slices of the input vector
+./gauss_matrixmarket ../bcsstk14.mtx data.out
+cd ..
+

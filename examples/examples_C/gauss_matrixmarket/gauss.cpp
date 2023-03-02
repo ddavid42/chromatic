@@ -63,8 +63,15 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
     a[i].resize(M+1);
 
 
+#if defined(_ORIGINS) && defined(_MATRIX)
+  double ref_val[4][4];
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      ref_val[i][j] = double(1.0, true);
+#endif
+
   for (int k=0; k<nz; k++){
-#ifdef _ORIGINS
+#if defined(_ORIGINS) && defined(_MATRIX)
     old_double v;
 #else
     double v;
@@ -73,10 +80,11 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
     fscanf(in, "%d %d %lg\n", &i, &j, &v);
     /* adjust from 1-based to 0-based */
     i-=1; j-=1;
+    
     // printf("%d %d %d %e \n",k,i,j,v);
-#ifdef _ORIGINS
-//  a[i][j]=double(v, true);
-    a[i][j]= v;
+#if defined(_ORIGINS) && defined(_MATRIX)
+    a[i][j]=ref_val[i/((a.size()+3)/4)][j/((a[i].size()+3)/4)];
+    a[i][j].value = v;
 #else
     a[i][j]= v;
 #endif
@@ -107,14 +115,14 @@ int main(int argc, char** argv) {
   
   // Set an arbitrary vector results
   for (int seg = 0; seg <= 10; ++seg) {
-#ifdef _ORIGINS
+#if defined(_ORIGINS) && defined(_INPUT_VECTOR)
     double ref_val(1.0, true);
 #endif
     for (int j = 0; j < N/10; ++j) {
       int i = (N/10)*seg + j;
       if (i >= N)
         break;
-#ifdef _ORIGINS
+#if defined(_ORIGINS) && defined(_INPUT_VECTOR)
       a[i][N] = ref_val;
       a[i][N].value = i;
 #else
