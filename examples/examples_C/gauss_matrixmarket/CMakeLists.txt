@@ -5,7 +5,7 @@ target_compile_features(gauss_matrixmarket PRIVATE cxx_std_17)
 # Add all headers files under the include directory
 if (NOT WITHOUT_ORIGINS)
   target_include_directories(gauss_matrixmarket PRIVATE ../../../include)
-  target_compile_definitions(gauss_matrixmarket PRIVATE _ORIGINS)
+  target_compile_definitions(gauss_matrixmarket PRIVATE _ORIGINS _ORIGINS_ERROR)
   target_compile_options(gauss_matrixmarket PRIVATE -include "origins.hpp")
   set(COMPILATION_OPTIONS "-D_ORIGINS_MAIN")
   if (WITH_MATRIX)

@@ -56,26 +56,34 @@ class OriginFloat : public float_st {
    operator int() const { return inherited::value; }
 
    friend OriginFloat operator-(OriginFloat&& source);
+   OriginFloat& operator+=(const OriginFloat& source);
    OriginFloat& operator+=(OriginFloat&& source);
    OriginFloat& operator+=(OriginDouble&& source);
+   friend OriginFloat operator+(const OriginFloat& first, const OriginFloat& second);
    friend OriginFloat operator+(const OriginFloat& first, OriginFloat&& second);
    friend OriginFloat operator+(OriginFloat&& first, OriginFloat&& second);
    friend OriginDouble operator+(const OriginFloat& first, OriginDouble&& second);
    friend OriginDouble operator+(OriginFloat&& first, OriginDouble&& second);
+   OriginFloat& operator-=(const OriginFloat& source);
    OriginFloat& operator-=(OriginFloat&& source);
    OriginFloat& operator-=(OriginDouble&& source);
+   friend OriginFloat operator-(const OriginFloat& first, const OriginFloat& second);
    friend OriginFloat operator-(const OriginFloat& first, OriginFloat&& second);
    friend OriginFloat operator-(OriginFloat&& first, OriginFloat&& second);
    friend OriginDouble operator-(const OriginFloat& first, OriginDouble&& second);
    friend OriginDouble operator-(OriginFloat&& first, OriginDouble&& second);
+   OriginFloat& operator*=(const OriginFloat& source);
    OriginFloat& operator*=(OriginFloat&& source);
    OriginFloat& operator*=(OriginDouble&& source);
+   friend OriginFloat operator*(const OriginFloat& first, const OriginFloat& second);
    friend OriginFloat operator*(const OriginFloat& first, OriginFloat&& second);
    friend OriginFloat operator*(OriginFloat&& first, OriginFloat&& second);
    friend OriginDouble operator*(const OriginFloat& first, OriginDouble&& second);
    friend OriginDouble operator*(OriginFloat&& first, OriginDouble&& second);
+   OriginFloat& operator/=(const OriginFloat& source);
    OriginFloat& operator/=(OriginFloat&& source);
    OriginFloat& operator/=(OriginDouble&& source);
+   friend OriginFloat operator/(const OriginFloat& first, const OriginFloat& second);
    friend OriginFloat operator/(const OriginFloat& first, OriginFloat&& second);
    friend OriginFloat operator/(OriginFloat&& first, OriginFloat&& second);
    friend OriginDouble operator/(const OriginFloat& first, OriginDouble&& second);
@@ -240,9 +248,20 @@ inline OriginFloat operator-(OriginFloat&& source)
    return result;
 }
 
+inline OriginFloat& OriginFloat::operator+=(const OriginFloat& source)
+{  inherited::addAssign(source, true /* is_plus */);
+   return *this;
+}
+
 inline OriginFloat& OriginFloat::operator+=(OriginFloat&& source)
 {  inherited::addAssign(source, true /* is_plus */);
    return *this;
+}
+
+inline OriginFloat operator+(const OriginFloat& first, const OriginFloat& second)
+{  OriginFloat result(first);
+   result.inherited::addAssign(second, true /* is_plus */);
+   return result;
 }
 
 inline OriginFloat operator+(const OriginFloat& first, OriginFloat&& second)
@@ -262,6 +281,12 @@ inline OriginFloat& OriginFloat::operator-=(OriginFloat&& source)
    return *this;
 }
 
+inline OriginFloat operator-(const OriginFloat& first, const OriginFloat& second)
+{  OriginFloat result(first);
+   result.inherited::addAssign(second, false /* is_plus */);
+   return result;
+}
+
 inline OriginFloat operator-(const OriginFloat& first, OriginFloat&& second)
 {  OriginFloat result(first);
    result.inherited::addAssign(second, false /* is_plus */);
@@ -272,6 +297,11 @@ inline OriginFloat operator-(OriginFloat&& first, OriginFloat&& second)
 {  OriginFloat result(first);
    result.inherited::addAssign(second, false /* is_plus */);
    return result;
+}
+
+inline OriginFloat& OriginFloat::operator*=(const OriginFloat& source)
+{  inherited::multAssign(source);
+   return *this;
 }
 
 inline OriginFloat& OriginFloat::operator*=(OriginFloat&& source)
@@ -291,9 +321,20 @@ inline OriginFloat operator*(OriginFloat&& first, OriginFloat&& second)
    return result;
 }
 
+inline OriginFloat& OriginFloat::operator/=(const OriginFloat& source)
+{  inherited::divAssign(source);
+   return *this;
+}
+
 inline OriginFloat& OriginFloat::operator/=(OriginFloat&& source)
 {  inherited::divAssign(source);
    return *this;
+}
+
+inline OriginFloat operator/(const OriginFloat& first, const OriginFloat& second)
+{  OriginFloat result(first);
+   result.inherited::divAssign(second);
+   return result;
 }
 
 inline OriginFloat operator/(const OriginFloat& first, OriginFloat&& second)
@@ -346,26 +387,34 @@ class OriginDouble : public double_st {
    operator int() const { return inherited::value; }
 
    friend OriginDouble operator-(OriginDouble&& source);
+   OriginDouble& operator+=(const OriginDouble& source);
    OriginDouble& operator+=(OriginDouble&& source);
    OriginDouble& operator+=(OriginFloat&& source);
+   friend OriginDouble operator+(const OriginDouble& first, const OriginDouble& second);
    friend OriginDouble operator+(const OriginDouble& first, OriginDouble&& second);
    friend OriginDouble operator+(OriginDouble&& first, OriginDouble&& second);
    friend OriginDouble operator+(const OriginDouble& first, OriginFloat&& second);
    friend OriginDouble operator+(OriginDouble&& first, OriginFloat&& second);
+   OriginDouble& operator-=(const OriginDouble& source);
    OriginDouble& operator-=(OriginDouble&& source);
    OriginDouble& operator-=(OriginFloat&& source);
+   friend OriginDouble operator-(const OriginDouble& first, const OriginDouble& second);
    friend OriginDouble operator-(const OriginDouble& first, OriginDouble&& second);
    friend OriginDouble operator-(OriginDouble&& first, OriginDouble&& second);
    friend OriginDouble operator-(const OriginDouble& first, OriginFloat&& second);
    friend OriginDouble operator-(OriginDouble&& first, OriginFloat&& second);
+   OriginDouble& operator*=(const OriginDouble& source);
    OriginDouble& operator*=(OriginDouble&& source);
    OriginDouble& operator*=(OriginFloat&& source);
+   friend OriginDouble operator*(const OriginDouble& first, const OriginDouble& second);
    friend OriginDouble operator*(const OriginDouble& first, OriginDouble&& second);
    friend OriginDouble operator*(OriginDouble&& first, OriginDouble&& second);
    friend OriginDouble operator*(const OriginDouble& first, OriginFloat&& second);
    friend OriginDouble operator*(OriginDouble&& first, OriginFloat&& second);
+   OriginDouble& operator/=(const OriginDouble& source);
    OriginDouble& operator/=(OriginDouble&& source);
    OriginDouble& operator/=(OriginFloat&& source);
+   friend OriginDouble operator/(const OriginDouble& first, const OriginDouble& second);
    friend OriginDouble operator/(const OriginDouble& first, OriginDouble&& second);
    friend OriginDouble operator/(OriginDouble&& first, OriginDouble&& second);
    friend OriginDouble operator/(const OriginDouble& first, OriginFloat&& second);
@@ -569,6 +618,11 @@ inline OriginDouble operator-(OriginDouble&& source)
    return result;
 }
 
+inline OriginDouble& OriginDouble::operator+=(const OriginDouble& source)
+{  inherited::addAssign(source, true /* is_plus */);
+   return *this;
+}
+
 inline OriginDouble& OriginDouble::operator+=(OriginDouble&& source)
 {  inherited::addAssign(source, true /* is_plus */);
    return *this;
@@ -584,6 +638,12 @@ inline OriginDouble& OriginDouble::operator+=(OriginFloat&& source)
 {  OriginDouble sourceConvert(source);
    inherited::addAssign(sourceConvert, true /* is_plus */);
    return *this;
+}
+
+inline OriginDouble operator+(const OriginDouble& first, const OriginDouble& second)
+{  OriginDouble result(first);
+   result.inherited::addAssign(second, true /* is_plus */);
+   return result;
 }
 
 inline OriginDouble operator+(const OriginDouble& first, OriginDouble&& second)
@@ -624,6 +684,11 @@ inline OriginDouble operator+(OriginFloat&& first, OriginDouble&& second)
    return result;
 }
 
+inline OriginDouble& OriginDouble::operator-=(const OriginDouble& source)
+{  inherited::addAssign(source, false /* is_plus */);
+   return *this;
+}
+
 inline OriginDouble& OriginDouble::operator-=(OriginDouble&& source)
 {  inherited::addAssign(source, false /* is_plus */);
    return *this;
@@ -639,6 +704,12 @@ inline OriginDouble& OriginDouble::operator-=(OriginFloat&& source)
 {  OriginDouble sourceConvert(source);
    inherited::addAssign(sourceConvert, false /* is_plus */);
    return *this;
+}
+
+inline OriginDouble operator-(const OriginDouble& first, const OriginDouble& second)
+{  OriginDouble result(first);
+   result.inherited::addAssign(second, false /* is_plus */);
+   return result;
 }
 
 inline OriginDouble operator-(const OriginDouble& first, OriginDouble&& second)
@@ -679,6 +750,11 @@ inline OriginDouble operator-(OriginFloat&& first, OriginDouble&& second)
    return result;
 }
 
+inline OriginDouble& OriginDouble::operator*=(const OriginDouble& source)
+{  inherited::multAssign(source);
+   return *this;
+}
+
 inline OriginDouble& OriginDouble::operator*=(OriginDouble&& source)
 {  inherited::multAssign(source);
    return *this;
@@ -694,6 +770,12 @@ inline OriginDouble& OriginDouble::operator*=(OriginFloat&& source)
 {  OriginDouble sourceConvert(source);
    inherited::multAssign(sourceConvert);
    return *this;
+}
+
+inline OriginDouble operator*(const OriginDouble& first, const OriginDouble& second)
+{  OriginDouble result(first);
+   result.inherited::multAssign(second);
+   return result;
 }
 
 inline OriginDouble operator*(const OriginDouble& first, OriginDouble&& second)
@@ -734,6 +816,11 @@ inline OriginDouble operator*(OriginFloat&& first, OriginDouble&& second)
    return result;
 }
 
+inline OriginDouble& OriginDouble::operator/=(const OriginDouble& source)
+{  inherited::divAssign(source);
+   return *this;
+}
+
 inline OriginDouble& OriginDouble::operator/=(OriginDouble&& source)
 {  inherited::divAssign(source);
    return *this;
@@ -749,6 +836,12 @@ inline OriginDouble& OriginDouble::operator/=(OriginFloat&& source)
 {  OriginDouble sourceConvert(source);
    inherited::divAssign(sourceConvert);
    return *this;
+}
+
+inline OriginDouble operator/(const OriginDouble& first, const OriginDouble& second)
+{  OriginDouble result(first);
+   result.inherited::divAssign(second);
+   return result;
 }
 
 inline OriginDouble operator/(const OriginDouble& first, OriginDouble&& second)
