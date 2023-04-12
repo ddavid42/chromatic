@@ -88,6 +88,7 @@ struct OriginVector : public BaseOriginVector {
    template <typename OtherType>
    OriginVector(const OriginVector<OtherType, N>& source);
 
+   void clear_origin() { contribution_without_origin = 0.0; contributions_size = 0; }
    void print(std::ostream& out) const
       {  bool isFirst = false;
          out << value << ", ";
@@ -213,6 +214,9 @@ struct OriginVector : public BaseOriginVector {
    void powAssign(const OriginVector<Type, N>& source);
    void oppositeAssign()
       {  value = -value;
+         contribution_without_origin = -contribution_without_origin;
+         std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+            [](Origin& origin) { origin.coefficient = -origin.coefficient; });
 #ifdef _ORIGINS_DOMAIN
          std::for_each(domain.begin(), domain.begin() + domain_size,
             [](Origin& origin)
@@ -227,7 +231,9 @@ struct OriginVector : public BaseOriginVector {
 #endif
       }
    void inverseAssign()
-      {  
+      {  contribution_without_origin = contribution_without_origin/(value*value);
+         std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+            [this](Origin& origin) { origin.coefficient /= (value*value); });
 #ifdef _ORIGINS_DOMAIN
          float sum = domain_additional_interval;
          std::for_each(domain.begin(), domain.begin() + domain_size,
@@ -303,6 +309,9 @@ struct OriginVector : public BaseOriginVector {
          }
 #endif
          if (value < 0) {
+            contribution_without_origin = -contribution_without_origin;
+            std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+               [](Origin& origin) { origin.coefficient = -origin.coefficient; });
             value = -value;
 #ifdef _ORIGINS_ERROR
             accumulated_error = -accumulated_error;
@@ -311,17 +320,22 @@ struct OriginVector : public BaseOriginVector {
       }
    void floorAssign()
       {  
+         Type result = std::floor(value);
+         if (value != 0) {
+            contribution_without_origin *= (result / value);
+            std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); });
+         }
+         else
+            clear_origin();
 #ifdef _ORIGINS_DOMAIN
          min_domain = std::floor(value + min_domain) - value;
          max_domain = std::floor(value + max_domain) - value;
 #endif
 #ifdef _ORIGINS_ERROR
-         Type result = std::floor(value);
          accumulated_error = std::floor(value - accumulated_error) - result;
-         result = value;
-#else
-         value = std::floor(value);
 #endif
+         value = result;
       }
    void fmodAssign(const OriginVector<Type, N>& source)
       {  
@@ -335,14 +349,19 @@ struct OriginVector : public BaseOriginVector {
                min_domain = -value;
          }
 #endif
-#ifdef _ORIGINS_ERROR
          Type result = std::fmod(value, source.value);
+         if (value != 0) {
+            contribution_without_origin *= (result / value);
+            std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); });
+         }
+         else
+            clear_origin();
+#ifdef _ORIGINS_ERROR
          accumulated_error = std::fmod(value - accumulated_error, source.value - source.accumulated_error)
                - result;
-         value = result;
-#else
-         value = std::fmod(value, source.value);
 #endif
+         value = result;
       }
    void modfAssign(OriginVector<Type, N>& source)
       {  
@@ -364,16 +383,21 @@ struct OriginVector : public BaseOriginVector {
                min_domain = -1.0 - value;
          }
 #endif
-#ifdef _ORIGINS_ERROR
          Type result, sourceResult = 0;
-         double sourceWithError = 0;
          result = std::modf(value, &sourceResult);
+#ifdef _ORIGINS_ERROR
+         double sourceWithError = 0;
          accumulated_error = std::modf(value - accumulated_error, &sourceWithError) - result;
          source.accumulated_error = sourceResult - sourceWithError;
-         value = result;
-#else
-         value = std::modf(value, &source.value);
 #endif
+         if (value != 0) {
+            contribution_without_origin *= (result / value);
+            std::for_each(contributions.begin(), contributions.begin() + contributions_size,
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); });
+         }
+         else
+            clear_origin();
+         value = result;
          source.contributions = contributions;
          source.contribution_without_origin = contribution_without_origin;
          source.contributions_size = contributions_size;
@@ -400,8 +424,10 @@ template <typename Type, int N>
 inline
 OriginVector<Type, N>::OriginVector(const Type& avalue, bool doesFollow)
    :  value(avalue)
-{  if (doesFollow) {
-      contributions[0] = Origin { ++atomic_id_counts, (float) 1.0 };
+{  if (value == 0.0)
+      return;
+   if (doesFollow) {
+      contributions[0] = Origin { ++atomic_id_counts, (float) value };
       contributions_size = 1;
 #ifdef _ORIGINS_DOMAIN
       domain[0] = Origin { atomic_id_counts, (float) 0.0001 };
@@ -413,7 +439,7 @@ OriginVector<Type, N>::OriginVector(const Type& avalue, bool doesFollow)
 #endif
    }
    else
-      contribution_without_origin = 1;
+      contribution_without_origin = value;
 }
 
 template <typename Type, int N>
@@ -544,8 +570,8 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
       std::array<Origin, (2*N)>& new_origins, int& new_origins_size,
       bool is_plus, float& newCoeffWithoutOrigin) const {
 // Type totalValue = std::fabs(is_plus ? (value + source.value) : (value - source.value));
-   newCoeffWithoutOrigin = contribution_without_origin*value
-         + source.contribution_without_origin*source.value;
+   newCoeffWithoutOrigin = is_plus ? (contribution_without_origin + source.contribution_without_origin)
+         :  (contribution_without_origin - source.contribution_without_origin);
 // if (totalValue != 0)
 //    newCoeffWithoutOrigin = contribution_without_origin*std::fabs(value)/totalValue
 //       + source.contribution_without_origin*std::fabs(source.value)/totalValue;
@@ -556,8 +582,10 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
       if (compare == 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
-         new_origins[new_origins_size].coefficient *= value;
-         new_origins[new_origins_size].coefficient += source.contributions[sourceIndex].coefficient*source.value;
+         if (is_plus)
+            new_origins[new_origins_size].coefficient += source.contributions[sourceIndex].coefficient;
+         else
+            new_origins[new_origins_size].coefficient -= source.contributions[sourceIndex].coefficient;
 //       new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(value)/totalValue : 1.0;
 //       new_origins[new_origins_size].coefficient += totalValue != 0 ? source.contributions[sourceIndex].coefficient*std::fabs(source.value)/totalValue : 1.0;
          ++new_origins_size;
@@ -566,14 +594,14 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
       }
       else if (compare < 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
-         new_origins[new_origins_size].coefficient *= value;
 //       new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(value)/totalValue : 1.0;
          ++new_origins_size;
          ++thisIndex;
       }
       else {
          new_origins[new_origins_size] = source.contributions[sourceIndex];
-         new_origins[new_origins_size].coefficient *= source.value;
+         if (!is_plus)
+            new_origins[new_origins_size].coefficient = -new_origins[new_origins_size].coefficient;
 //       new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(source.value)/totalValue : 1.0;
          ++new_origins_size;
          ++sourceIndex;
@@ -581,14 +609,14 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
    }
    while (thisIndex < contributions_size) {
       new_origins[new_origins_size] = contributions[thisIndex];
-      new_origins[new_origins_size].coefficient *= value;
 //    new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(value)/totalValue :1.0;
       ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.contributions_size) {
       new_origins[new_origins_size] = source.contributions[sourceIndex];
-      new_origins[new_origins_size].coefficient *= source.value;
+      if (!is_plus)
+         new_origins[new_origins_size].coefficient = -new_origins[new_origins_size].coefficient;
 //    new_origins[new_origins_size].coefficient *= totalValue != 0 ? std::fabs(source.value)/totalValue : 1.0;
       ++new_origins_size;
       ++sourceIndex;
@@ -691,15 +719,17 @@ OriginVector<Type, N>::addAssign(const OriginVector<Type, N>& source, bool is_pl
    accumulated_error += newError;
 #endif
    value = newValue;
+   if (value == 0.0)
+      clear_origin();
    restrictContributions();
 }
 
 template <typename Type, int N>
 inline void
 OriginVector<Type, N>::multAssign(const Type& source) {
-   contribution_without_origin = 0.5*contribution_without_origin + 0.5;
+   contribution_without_origin = source*(0.5*contribution_without_origin + 0.5);
    std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-      [](Origin& origin) { origin.coefficient *= 0.5; });
+      [source](Origin& origin) { origin.coefficient *= 0.5*source; });
 #ifdef _ORIGINS_DOMAIN
    domain_additional_interval *= std::fabs(source);
    domain_center *= source;
@@ -719,14 +749,16 @@ OriginVector<Type, N>::multAssign(const Type& source) {
 #else
    value *= source;
 #endif
+   if (value == 0.0)
+      clear_origin();
 }
 
 template <typename Type, int N>
 inline void
 OriginVector<Type, N>::divAssign(const Type& source) {
-   contribution_without_origin = 0.5*contribution_without_origin + 0.5;
+   contribution_without_origin = (0.5*contribution_without_origin + 0.5)/source;
    std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-      [](Origin& origin) { origin.coefficient *= 0.5; });
+      [source](Origin& origin) { origin.coefficient *= 0.5/source; });
 #ifdef _ORIGINS_DOMAIN
    domain_additional_interval /= std::fabs(source);
    domain_center /= source;
@@ -745,6 +777,8 @@ OriginVector<Type, N>::divAssign(const Type& source) {
 #else
    value /= source;
 #endif
+   if (value == 0.0)
+      clear_origin();
 }
 
 template <typename Type, int N>
@@ -752,40 +786,42 @@ void
 OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
       std::array<Origin, (2*N)>& new_origins, int& new_origins_size,
       float& newCoeffWithoutOrigin) const {
-   newCoeffWithoutOrigin = 0.5*contribution_without_origin + 0.5*source.contribution_without_origin;
+   newCoeffWithoutOrigin = source.value*0.5*contribution_without_origin
+         + value*0.5*source.contribution_without_origin;
    int thisIndex = 0, sourceIndex = 0;
    while (thisIndex < contributions_size && sourceIndex < source.contributions_size) {
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
       if (compare == 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient
-            = 0.5*contributions[thisIndex].coefficient + 0.5*source.contributions[sourceIndex].coefficient;
+            = source.value*0.5*contributions[thisIndex].coefficient
+               + value*0.5*source.contributions[sourceIndex].coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
-         new_origins[new_origins_size].coefficient *= 0.5;
+         new_origins[new_origins_size].coefficient *= 0.5*source.value;
          ++new_origins_size;
          ++thisIndex;
       }
       else {
          new_origins[new_origins_size] = source.contributions[sourceIndex];
-         new_origins[new_origins_size].coefficient *= 0.5;
+         new_origins[new_origins_size].coefficient *= 0.5*value;
          ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < contributions_size) {
       new_origins[new_origins_size] = contributions[thisIndex];
-      new_origins[new_origins_size].coefficient *= 0.5;
+      new_origins[new_origins_size].coefficient *= 0.5*source.value;
       ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.contributions_size) {
       new_origins[new_origins_size] = source.contributions[sourceIndex];
-      new_origins[new_origins_size].coefficient *= 0.5;
+      new_origins[new_origins_size].coefficient *= 0.5*value;
       ++new_origins_size;
       ++sourceIndex;
    }
@@ -927,6 +963,8 @@ OriginVector<Type, N>::multAssign(const OriginVector<Type, N>& source) {
    accumulated_error += value*source.accumulated_error;
 #endif
    value = newValue;
+   if (value == 0.0)
+      clear_origin();
    restrictContributions();
 }
 
@@ -935,40 +973,42 @@ void
 OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
       std::array<Origin, (2*N)>& new_origins, int& new_origins_size,
       float& newCoeffWithoutOrigin) const {
-   newCoeffWithoutOrigin = 0.5*contribution_without_origin + 0.5*source.contribution_without_origin;
+   newCoeffWithoutOrigin = 0.5*contribution_without_origin/source.value
+         + value*0.5*source.contribution_without_origin/(source.value*source.value);
    int thisIndex = 0, sourceIndex = 0;
    while (thisIndex < contributions_size && sourceIndex < source.contributions_size) {
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
       if (compare == 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient
-            = 0.5*contributions[thisIndex].coefficient + 0.5*source.contributions[sourceIndex].coefficient;
+            = 0.5*contributions[thisIndex].coefficient/source.value
+                  + value*0.5*source.contributions[sourceIndex].coefficient/(source.value*source.value);
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
       }
       else if (compare < 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
-         new_origins[new_origins_size].coefficient *= 0.5;
+         new_origins[new_origins_size].coefficient *= 0.5/source.value;
          ++new_origins_size;
          ++thisIndex;
       }
       else {
          new_origins[new_origins_size] = source.contributions[sourceIndex];
-         new_origins[new_origins_size].coefficient *= 0.5;
+         new_origins[new_origins_size].coefficient *= value*0.5/(source.value*source.value);
          ++new_origins_size;
          ++sourceIndex;
       }
    }
    while (thisIndex < contributions_size) {
       new_origins[new_origins_size] = contributions[thisIndex];
-      new_origins[new_origins_size].coefficient *= 0.5;
+      new_origins[new_origins_size].coefficient *= 0.5/source.value;
       ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.contributions_size) {
       new_origins[new_origins_size] = source.contributions[sourceIndex];
-      new_origins[new_origins_size].coefficient *= 0.5;
+      new_origins[new_origins_size].coefficient *= value*0.5/(source.value*source.value);
       ++new_origins_size;
       ++sourceIndex;
    }
@@ -1130,6 +1170,8 @@ OriginVector<Type, N>::divAssign(const OriginVector<Type, N>& source) {
          / (source.value + source.accumulated_error);
 #endif
    value = newValue;
+   if (value == 0.0)
+      clear_origin();
    restrictContributions();
 }
 

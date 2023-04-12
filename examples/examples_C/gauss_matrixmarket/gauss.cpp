@@ -71,7 +71,7 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
 #endif
 
   for (int k=0; k<nz; k++){
-#if defined(_ORIGINS) && defined(_MATRIX)
+#if defined(_ORIGINS)
     old_double v;
 #else
     double v;
