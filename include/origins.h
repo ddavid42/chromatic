@@ -120,7 +120,7 @@ struct OriginVector : public BaseOriginVector {
          out << ", [" << (value + min_domain)/value << ", " << (value + max_domain)/value << ']';
 #endif
 #ifdef _ORIGINS_ERROR
-         out << ", error=" << accumulated_error/value;
+         out << ", relative error=" << accumulated_error/value;
 #endif
       }
    OriginVector& operator=(const OriginVector<Type, N>& source) = default;

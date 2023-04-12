@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include <time.h>
 #include "mmio.h"
@@ -85,6 +86,7 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
 #if defined(_ORIGINS) && defined(_MATRIX)
     a[i][j]=ref_val[i/((a.size()+3)/4)][j/((a[i].size()+3)/4)];
     a[i][j].value = v;
+    a[i][j].contributions[0].coefficient = v;
 #else
     a[i][j]= v;
 #endif
@@ -176,6 +178,15 @@ int main(int argc, char** argv) {
     printf("\n");
     fflush(stdout);
   }
+
+#ifdef _ORIGINS_ERROR
+  for (int i = 0; i < N; ++i) {
+    std::cout << "X" << i << " value: ";
+    x[i].printRelative(std::cout);
+    std::cout << std::endl;
+    fflush(stdout);
+  }
+#endif
 
 #ifdef _ORIGINS
   // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
