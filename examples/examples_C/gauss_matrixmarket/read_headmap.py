@@ -14,7 +14,9 @@ i = 0
 heatmap = np.zeros((int(args.lines), int(args.columns)))
 with open(args.file_data, "r") as data_file:
     for line in data_file:
-        heatmap[i] = [float(i) for i in line.split(",")]
+        heatmap[i] = [float(j) for j in line.split(",")][0:int(args.columns)]
         i = i+1
+        if i >= int(args.lines):
+            break
 ax = sns.heatmap(heatmap, annot=True, linewidth=0.5)
 plt.show()

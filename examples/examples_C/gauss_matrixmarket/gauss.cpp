@@ -189,15 +189,22 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef _ORIGINS
+#ifdef _MATRIX
+#define M1 4
+#define M2 4
+#else
+#define M1 N
+#define M2 (N+1)
+#endif
   // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
-  old_double* heatmap1 = new old_double[N*(N+1)]{};
+  old_double* heatmap1 = new old_double[M1*M2]{};
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/(N+1)), (int)((k-1)%(N+1)));
+        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
         fflush(stdout);
         old_float v = x[i].contributions[origin].coefficient;
-        heatmap1[(k-1)/(N+1)*(N+1) + (k-1)%(N+1)] += v;
+        heatmap1[(k-1)/M2*M2 + (k-1)%M2] += v;
      }
   }
 
@@ -205,10 +212,10 @@ int main(int argc, char** argv) {
      std::ofstream out(argv[2]);
      if ( out.is_open() )
         std::cout<<"File " << argv[2] <<" opened"<<std::endl;
-     for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j)
-            out << heatmap1[i*(N+1)+j] << ", ";
-        out << heatmap1[i*(N+1)+N] << '\n';
+     for (int i = 0; i < M1; ++i) {
+        for (int j = 0; j < M2-1; ++j)
+            out << heatmap1[i*M2+j] << ", ";
+        out << heatmap1[i*M2+M2-1] << '\n';
      }
      if ( out.is_open() ){
         std::cout<<"File " << argv[2] <<" closed"<<std::endl;
