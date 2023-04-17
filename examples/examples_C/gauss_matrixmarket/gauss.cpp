@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
   // Set an arbitrary vector results
   for (int seg = 0; seg <= 10; ++seg) {
 #if defined(_ORIGINS) && defined(_INPUT_VECTOR)
-    double ref_val(1.0, true);
+    double ref_val(1.0, true, false);
 #endif
     for (int j = 0; j < N/10; ++j) {
       int i = (N/10)*seg + j;
@@ -208,6 +208,31 @@ int main(int argc, char** argv) {
      }
   }
 
+  old_double* heatmap2 = new old_double[M1*M2]{};
+  for (int i = 0; i < N; ++i) {
+     for (int origin=0; origin < x[i].contributions_size; ++origin) {
+        uint64_t k = x[i].contributions[origin].symbol_id;
+        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
+        fflush(stdout);
+        old_float v = x[i].contributions[origin].over_coefficient;
+        heatmap2[(k-1)/M2*M2 + (k-1)%M2] += v;
+     }
+  }
+
+#ifdef _ORIGINS_DOMAIN
+  old_double* heatmap3 = new old_double[M1*M2]{};
+  for (int i = 0; i < N; ++i) {
+     for (int origin=0; origin < x[i].contributions_size; ++origin) {
+        uint64_t k = x[i].contributions[origin].symbol_id;
+        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
+        fflush(stdout);
+        old_float v = x[i].contributions[origin].coefficient
+            * (x[i].max_domain - x[i].min_domain)/x[i].value;
+        heatmap3[(k-1)/M2*M2 + (k-1)%M2] += v;
+     }
+  }
+#endif
+
   if (argc > 2) {
      std::ofstream out(argv[2]);
      if ( out.is_open() )
@@ -223,6 +248,41 @@ int main(int argc, char** argv) {
      }
   }
   delete [] heatmap1;
+
+  if (argc > 3) {
+     std::ofstream out(argv[3]);
+     if ( out.is_open() )
+        std::cout<<"File " << argv[3] <<" opened"<<std::endl;
+     for (int i = 0; i < M1; ++i) {
+        for (int j = 0; j < M2-1; ++j)
+            out << heatmap2[i*M2+j] << ", ";
+        out << heatmap2[i*M2+M2-1] << '\n';
+     }
+     if ( out.is_open() ){
+        std::cout<<"File " << argv[2] <<" closed"<<std::endl;
+        out.close();
+     }
+  }
+  delete [] heatmap2;
+
+#ifdef _ORIGINS_DOMAIN
+  if (argc > 4) {
+     std::ofstream out(argv[4]);
+     if ( out.is_open() )
+        std::cout<<"File " << argv[4] <<" opened"<<std::endl;
+     for (int i = 0; i < M1; ++i) {
+        for (int j = 0; j < M2-1; ++j)
+            out << heatmap3[i*M2+j] << ", ";
+        out << heatmap3[i*M2+M2-1] << '\n';
+     }
+     if ( out.is_open() ){
+        std::cout<<"File " << argv[3] <<" closed"<<std::endl;
+        out.close();
+     }
+  }
+  delete [] heatmap3;
+#endif
+
 #endif
 }
 
