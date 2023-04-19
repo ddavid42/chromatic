@@ -1,4 +1,4 @@
-add_executable(gauss_matrixmarket mmio.cpp gauss.cpp ${HEADER_FILES})
+add_executable(gauss_matrixmarket mmio.cpp gauss.cpp workplan.cpp ${HEADER_FILES})
 
 target_compile_features(gauss_matrixmarket PRIVATE cxx_std_17)
 

@@ -60,7 +60,7 @@ struct Origin {
                out << " + ";
             else
                isFirst = false;
-            out << '[' << coefficient/value << ", " << over_coefficient/std::abs(value) << ']' << "*id_" << symbol_id;
+            out << '[' << coefficient/value << ", " << over_coefficient/std::fabs(value) << ']' << "*id_" << symbol_id;
          }
       }
 };
@@ -117,7 +117,7 @@ struct OriginVector : public BaseOriginVector {
          if (contribution_without_origin || over_contribution_without_origin) {
             if (!isFirst)
                out << " + ";
-            out << '[' << contribution_without_origin/value << ", " << over_contribution_without_origin/std::abs(value) << ']' << "*id_unknown";
+            out << '[' << contribution_without_origin/value << ", " << over_contribution_without_origin/std::fabs(value) << ']' << "*id_unknown";
          }
 #ifdef _ORIGINS_DOMAIN
          out << ", [" << (value + min_domain)/value << ", " << (value + max_domain)/value << ']';
@@ -327,9 +327,9 @@ struct OriginVector : public BaseOriginVector {
          Type result = std::floor(value);
          if (value != 0) {
             contribution_without_origin *= (result / value);
-            over_contribution_without_origin *= std::abs(result / value);
+            over_contribution_without_origin *= std::fabs(result / value);
             std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::abs(result / value); });
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::fabs(result / value); });
          }
          else
             clear_origin();
@@ -357,9 +357,9 @@ struct OriginVector : public BaseOriginVector {
          Type result = std::fmod(value, source.value);
          if (value != 0) {
             contribution_without_origin *= (result / value);
-            over_contribution_without_origin *= std::abs(result / value);
+            over_contribution_without_origin *= std::fabs(result / value);
             std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::abs(result / value); });
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::fabs(result / value); });
          }
          else
             clear_origin();
@@ -398,9 +398,9 @@ struct OriginVector : public BaseOriginVector {
 #endif
          if (value != 0) {
             contribution_without_origin *= (result / value);
-            over_contribution_without_origin *= std::abs(result / value);
+            over_contribution_without_origin *= std::fabs(result / value);
             std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::abs(result / value); });
+               [this, result](Origin& origin) { origin.coefficient *= (result / value); origin.over_coefficient *= std::fabs(result / value); });
          }
          else
             clear_origin();
@@ -436,7 +436,7 @@ OriginVector<Type, N>::OriginVector(const Type& avalue, bool doesFollow, bool is
 {  if (value == 0.0)
       return;
    if (doesFollow) {
-      contributions[0] = Origin { ++atomic_id_counts, (float) value, (float) std::abs(value), isAtomic };
+      contributions[0] = Origin { ++atomic_id_counts, (float) value, (float) std::fabs(value), isAtomic };
       contributions_size = 1;
 #ifdef _ORIGINS_DOMAIN
       domain[0] = Origin { atomic_id_counts, (float) 0.0001 };
@@ -449,7 +449,7 @@ OriginVector<Type, N>::OriginVector(const Type& avalue, bool doesFollow, bool is
    }
    else {
       contribution_without_origin = value;
-      over_contribution_without_origin = std::abs(value);
+      over_contribution_without_origin = std::fabs(value);
    }
 }
 
@@ -576,7 +576,7 @@ OriginVector<Type, N>::copy(std::array<Origin, N>& destinations, int& destinatio
       else {
          coeffWithoutOrigin += newOrigin.coefficient;
          if (overCoeffWithoutOrigin)
-            *overCoeffWithoutOrigin += std::abs(newOrigin.coefficient);
+            *overCoeffWithoutOrigin += std::fabs(newOrigin.coefficient);
       }
    }
 }
@@ -741,9 +741,9 @@ template <typename Type, int N>
 inline void
 OriginVector<Type, N>::multAssign(const Type& source) {
    contribution_without_origin = source*(0.5*contribution_without_origin + 0.5);
-   over_contribution_without_origin = std::abs(source)*(0.5*over_contribution_without_origin + 0.5);
+   over_contribution_without_origin = std::fabs(source)*(0.5*over_contribution_without_origin + 0.5);
    std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-      [source](Origin& origin) { origin.coefficient *= 0.5*source; origin.over_coefficient *= 0.5*std::abs(source); });
+      [source](Origin& origin) { origin.coefficient *= 0.5*source; origin.over_coefficient *= 0.5*std::fabs(source); });
 #ifdef _ORIGINS_DOMAIN
    domain_additional_interval *= std::fabs(source);
    domain_center *= source;
@@ -771,9 +771,9 @@ template <typename Type, int N>
 inline void
 OriginVector<Type, N>::divAssign(const Type& source) {
    contribution_without_origin = (0.5*contribution_without_origin + 0.5)/source;
-   over_contribution_without_origin = (0.5*contribution_without_origin + 0.5)/std::abs(source);
+   over_contribution_without_origin = (0.5*contribution_without_origin + 0.5)/std::fabs(source);
    std::for_each(contributions.begin(), contributions.begin() + contributions_size,
-      [source](Origin& origin) { origin.coefficient *= 0.5/source; origin.over_coefficient *= 0.5/std::abs(source); });
+      [source](Origin& origin) { origin.coefficient *= 0.5/source; origin.over_coefficient *= 0.5/std::fabs(source); });
 #ifdef _ORIGINS_DOMAIN
    domain_additional_interval /= std::fabs(source);
    domain_center /= source;
@@ -803,8 +803,8 @@ OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
       float& newCoeffWithoutOrigin, float& newOverCoeffWithoutOrigin) const {
    newCoeffWithoutOrigin = source.value*0.5*contribution_without_origin
          + value*0.5*source.contribution_without_origin;
-   newOverCoeffWithoutOrigin = std::abs(source.value)*0.5*over_contribution_without_origin
-         + std::abs(value)*0.5*source.over_contribution_without_origin;
+   newOverCoeffWithoutOrigin = std::fabs(source.value)*0.5*over_contribution_without_origin
+         + std::fabs(value)*0.5*source.over_contribution_without_origin;
    int thisIndex = 0, sourceIndex = 0;
    while (thisIndex < contributions_size && sourceIndex < source.contributions_size) {
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
@@ -814,8 +814,8 @@ OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
             = source.value*0.5*contributions[thisIndex].coefficient
                + value*0.5*source.contributions[sourceIndex].coefficient;
          new_origins[new_origins_size].over_coefficient
-            = std::abs(source.value)*0.5*contributions[thisIndex].over_coefficient
-               + std::abs(value)*0.5*source.contributions[sourceIndex].over_coefficient;
+            = std::fabs(source.value)*0.5*contributions[thisIndex].over_coefficient
+               + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -823,14 +823,14 @@ OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
       else if (compare < 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5*source.value;
-         new_origins[new_origins_size].over_coefficient *= 0.5*std::abs(source.value);
+         new_origins[new_origins_size].over_coefficient *= 0.5*std::fabs(source.value);
          ++new_origins_size;
          ++thisIndex;
       }
       else {
          new_origins[new_origins_size] = source.contributions[sourceIndex];
          new_origins[new_origins_size].coefficient *= 0.5*value;
-         new_origins[new_origins_size].over_coefficient *= 0.5*std::abs(value);
+         new_origins[new_origins_size].over_coefficient *= 0.5*std::fabs(value);
          ++new_origins_size;
          ++sourceIndex;
       }
@@ -838,14 +838,14 @@ OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
    while (thisIndex < contributions_size) {
       new_origins[new_origins_size] = contributions[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5*source.value;
-      new_origins[new_origins_size].over_coefficient *= 0.5*std::abs(source.value);
+      new_origins[new_origins_size].over_coefficient *= 0.5*std::fabs(source.value);
       ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.contributions_size) {
       new_origins[new_origins_size] = source.contributions[sourceIndex];
       new_origins[new_origins_size].coefficient *= 0.5*value;
-      new_origins[new_origins_size].over_coefficient *= 0.5*std::abs(value);
+      new_origins[new_origins_size].over_coefficient *= 0.5*std::fabs(value);
       ++new_origins_size;
       ++sourceIndex;
    }
@@ -999,8 +999,8 @@ OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
       float& newCoeffWithoutOrigin, float& newOverCoeffWithoutOrigin) const {
    newCoeffWithoutOrigin = 0.5*contribution_without_origin/source.value
          + value*0.5*source.contribution_without_origin/(source.value*source.value);
-   newOverCoeffWithoutOrigin = 0.5*over_contribution_without_origin/std::abs(source.value)
-         + std::abs(value)*0.5*source.over_contribution_without_origin/(source.value*source.value);
+   newOverCoeffWithoutOrigin = 0.5*over_contribution_without_origin/std::fabs(source.value)
+         + std::fabs(value)*0.5*source.over_contribution_without_origin/(source.value*source.value);
    int thisIndex = 0, sourceIndex = 0;
    while (thisIndex < contributions_size && sourceIndex < source.contributions_size) {
       auto compare = contributions[thisIndex].compare(source.contributions[sourceIndex]);
@@ -1010,8 +1010,8 @@ OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
             = 0.5*contributions[thisIndex].coefficient/source.value
                   + value*0.5*source.contributions[sourceIndex].coefficient/(source.value*source.value);
          new_origins[new_origins_size].over_coefficient
-            = 0.5*contributions[thisIndex].over_coefficient/std::abs(source.value)
-                  + std::abs(value)*0.5*source.contributions[sourceIndex].over_coefficient/(source.value*source.value);
+            = 0.5*contributions[thisIndex].over_coefficient/std::fabs(source.value)
+                  + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient/(source.value*source.value);
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -1019,14 +1019,14 @@ OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
       else if (compare < 0) {
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient *= 0.5/source.value;
-         new_origins[new_origins_size].over_coefficient *= 0.5/std::abs(source.value);
+         new_origins[new_origins_size].over_coefficient *= 0.5/std::fabs(source.value);
          ++new_origins_size;
          ++thisIndex;
       }
       else {
          new_origins[new_origins_size] = source.contributions[sourceIndex];
          new_origins[new_origins_size].coefficient *= value*0.5/(source.value*source.value);
-         new_origins[new_origins_size].over_coefficient *= std::abs(value)*0.5/(source.value*source.value);
+         new_origins[new_origins_size].over_coefficient *= std::fabs(value)*0.5/(source.value*source.value);
          ++new_origins_size;
          ++sourceIndex;
       }
@@ -1034,14 +1034,14 @@ OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
    while (thisIndex < contributions_size) {
       new_origins[new_origins_size] = contributions[thisIndex];
       new_origins[new_origins_size].coefficient *= 0.5/source.value;
-      new_origins[new_origins_size].over_coefficient *= 0.5/std::abs(source.value);
+      new_origins[new_origins_size].over_coefficient *= 0.5/std::fabs(source.value);
       ++new_origins_size;
       ++thisIndex;
    }
    while (sourceIndex < source.contributions_size) {
       new_origins[new_origins_size] = source.contributions[sourceIndex];
       new_origins[new_origins_size].coefficient *= value*0.5/(source.value*source.value);
-      new_origins[new_origins_size].over_coefficient *= std::abs(value)*0.5/(source.value*source.value);
+      new_origins[new_origins_size].over_coefficient *= std::fabs(value)*0.5/(source.value*source.value);
       ++new_origins_size;
       ++sourceIndex;
    }
@@ -1403,9 +1403,9 @@ OriginVector<Type, N>::powAssign(const OriginVector<Type, N>& source) {
 }
 
 struct double_st;
-struct float_st : public OriginVector<float, 20> {
+struct float_st : public OriginVector<float, 16> {
   private:
-   typedef OriginVector<float, 20> inherited;
+   typedef OriginVector<float, 16> inherited;
 
   public:
    float_st() = default;
@@ -1415,9 +1415,9 @@ struct float_st : public OriginVector<float, 20> {
    float_st(const double_st& source);
 };
 
-struct double_st : public OriginVector<double, 20> {
+struct double_st : public OriginVector<double, 16> {
   private:
-   typedef OriginVector<double, 20> inherited;
+   typedef OriginVector<double, 16> inherited;
 
   public:
    double_st() = default;

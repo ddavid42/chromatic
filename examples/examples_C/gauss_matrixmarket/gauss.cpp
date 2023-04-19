@@ -5,6 +5,7 @@
 #include <vector>
 #include <time.h>
 #include "mmio.h"
+#include "workplan.h"
 
 #ifdef _ORIGINS
 void
@@ -24,8 +25,46 @@ print_np_mat_ChNbr(double** a/*[n][n+1]*/, int n) {
 }
 #endif
 
+bool
+setToSymbolId(uint64_t symbol, WorkPlan::Cursor& cursor) {
+   if (!cursor.empty()) {
+      QuadTreeElement* current = cursor.back();
+      while (current->hasContent()) {
+         if (!cursor.setToNext()) return false;
+         current = cursor.back();
+      }
+      if (current->sharedReference().contributions[0].symbol_id <= symbol) {
+         while (current->sharedReference().contributions[0].symbol_id < symbol) {
+            if (!cursor.setToNext()) return false;
+            current = cursor.back();
+            while (current->hasContent()) {
+               if (!cursor.setToNext()) return false;
+               current = cursor.back();
+            }
+         }
+         if (current->sharedReference().contributions[0].symbol_id != symbol) return false;
+         return true;
+      }
+   }
+   if (!cursor.setToFirst()) return false;
+   QuadTreeElement* current = cursor.back();
+   while (current->hasContent()) {
+      if (!cursor.setToNext()) return false;
+      current = cursor.back();
+   }
+   while (current->sharedReference().contributions[0].symbol_id < symbol) {
+      if (!cursor.setToNext()) return false;
+      current = cursor.back();
+      while (current->hasContent()) {
+         if (!cursor.setToNext()) return false;
+         current = cursor.back();
+      }
+   }
+   if (current->sharedReference().contributions[0].symbol_id != symbol) return false;
+   return true;
+}
 
-void read_matrix(char *input, std::vector< std::vector<double> >& a){
+void read_matrix(char *input, std::vector< std::vector<double> >& a, WorkPlan& plan){
   FILE *in;
   MM_typecode matcode;
   int ret_code;
@@ -65,10 +104,20 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
 
 
 #if defined(_ORIGINS) && defined(_MATRIX)
-  double ref_val[4][4];
-  for (int i = 0; i < 4; ++i)
-    for (int j = 0; j < 4; ++j)
-      ref_val[i][j] = double(1.0, true);
+  WorkPlan::Cursor cursor(plan);
+  if (cursor.setToFirst()) {
+    do {
+      if (!cursor.elementAt()->hasContent() && !cursor.elementAt()->hasContribution()) {
+        cursor.elementAt()->sharedReference() = double(1.0, true);
+        cursor.elementAt()->sharedReference().contributions[0].is_atomic_var
+          = cursor.elementAt()->getWidth() == 1 && cursor.elementAt()->getLength() == 1;
+      }
+    } while (cursor.setToNext());
+  }
+//double ref_val[4][4];
+//for (int i = 0; i < 4; ++i)
+//  for (int j = 0; j < 4; ++j)
+//    ref_val[i][j] = double(1.0, true);
 #endif
 
   for (int k=0; k<nz; k++){
@@ -84,16 +133,24 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
     
     // printf("%d %d %d %e \n",k,i,j,v);
 #if defined(_ORIGINS) && defined(_MATRIX)
-    a[i][j]=ref_val[i/((a.size()+3)/4)][j/((a[i].size()+3)/4)];
-    a[i][j].value = v;
-    a[i][j].contributions[0].coefficient = v;
+    if (!cursor.setToPosition(i, j))
+      throw 0;
+    if (cursor.elementAt()->hasContent())
+      throw 0;
+    if (cursor.elementAt()->hasContribution())
+      a[i][j] = v;
+    else {
+      a[i][j]=cursor.elementAt()->sharedReference();
+      a[i][j].value = v;
+      a[i][j].contributions[0].coefficient = v;
+      a[i][j].contributions[0].over_coefficient = std::fabs(v);
+    }
 #else
     a[i][j]= v;
 #endif
   }
 
   if (in !=stdin) fclose(in);
-
 }
 
 int main(int argc, char** argv) {
@@ -108,8 +165,12 @@ int main(int argc, char** argv) {
 	} 
   
   std::vector<std::vector<double>> a;
+  WorkPlan plan;
+  { std::ifstream in("init_map.txt");
+    plan.read(in);
+  }
 
-  read_matrix(argv[1], a);
+  read_matrix(argv[1], a, plan);
   N = a.size();
   double x[N];
   memset(x, 0, sizeof(x));
@@ -169,9 +230,9 @@ int main(int argc, char** argv) {
   for (int i = 0; i < N; ++i) {
 #ifdef _ORIGINS
     printf("X%d value: %e\n", i, x[i].value);
-    printf("Idx : [-1, %e]\n", x[i].contribution_without_origin);
+    printf("Idx : [-1, %e, %e]\n", x[i].contribution_without_origin, x[i].over_contribution_without_origin);
     for (int origin_index = 0; origin_index < x[i].contributions_size; ++origin_index)
-      printf("[%ld, %e]\n", x[i].contributions[origin_index].symbol_id, x[i].contributions[origin_index].coefficient);
+      printf("[%ld, %e, %e]\n", x[i].contributions[origin_index].symbol_id, x[i].contributions[origin_index].coefficient, x[i].contributions[origin_index].over_coefficient);
 #else
     printf("X%d value: %e\n", i, x[i]);
 #endif
@@ -190,19 +251,97 @@ int main(int argc, char** argv) {
 
 #ifdef _ORIGINS
 #ifdef _MATRIX
-#define M1 4
-#define M2 4
+
+// #define M1 4
+// #define M2 4
+  for (int i = 0; i < N; ++i) {
+     WorkPlan::Cursor cursor(plan);
+     for (int origin=0; origin < x[i].contributions_size; ++origin) {
+        uint64_t k = x[i].contributions[origin].symbol_id;
+        if (!setToSymbolId(k, cursor))
+            return 3;
+        cursor.elementAt()->getSContribution() += x[i].contributions[origin].coefficient;
+        cursor.elementAt()->getSOverContribution() += x[i].contributions[origin].over_coefficient;
+     }
+  }
+  {  WorkPlan::Cursor cursor(plan);
+     if (cursor.setToFirst()) {
+        QuadTreeElement* current;
+        do {
+           current = cursor.back();
+           while (current->hasContent()) {
+              if (!cursor.setToNext()) return 1;
+              current = cursor.back();
+           }
+           if (!current->hasContribution())
+              current->setContribution();
+        } while (cursor.setToNext());
+     }
+  }
+  {  std::ofstream out("init_outmap.txt");
+     plan.write(out);
+  }
+  if (argc > 2) {
+     std::ofstream out(argv[2]);
+     if ( out.is_open() )
+        std::cout<<"File " << argv[2] <<" opened"<<std::endl;
+     out << plan.getWidth() << ' ' << plan.getLength() << ' ' << plan.getCount() << '\n';
+     WorkPlan::Cursor cursor(plan);
+     if (cursor.setToFirst()) {
+       QuadTreeElement* current;
+       do {
+         current = cursor.back();
+         while (current->hasContent()) {
+            if (!cursor.setToNext()) return 1;
+            current = cursor.back();
+         }
+         out << current->getX() << ' ' << current->getY() << ' '
+             << current->getWidth() << ' ' << current->getLength() << ' '
+             << current->getContribution() << '\n';
+       } while (cursor.setToNext());
+     }
+     if ( out.is_open() ){
+        std::cout<<"File " << argv[2] <<" closed"<<std::endl;
+        out.close();
+     }
+  }
+
+  if (argc > 3) {
+     std::ofstream out(argv[3]);
+     if ( out.is_open() )
+        std::cout<<"File " << argv[3] <<" opened"<<std::endl;
+     out << plan.getWidth() << ' ' << plan.getLength() << ' ' << plan.getCount() << '\n';
+     WorkPlan::Cursor cursor(plan);
+     if (cursor.setToFirst()) {
+       QuadTreeElement* current;
+       do {
+         current = cursor.back();
+         while (current->hasContent()) {
+            if (!cursor.setToNext()) return 1;
+            current = cursor.back();
+         }
+         out << current->getX() << ' ' << current->getY() << ' '
+             << current->getWidth() << ' ' << current->getLength() << ' '
+             << current->getOverContribution() << '\n';
+       } while (cursor.setToNext());
+     }
+     if ( out.is_open() ){
+        std::cout<<"File " << argv[3] <<" closed"<<std::endl;
+        out.close();
+     }
+  }
+
 #else
 #define M1 N
 #define M2 (N+1)
-#endif
+
   // Plot the Norm1 of each input values on the resulting system (ie. Detailed Condition Number)
   old_double* heatmap1 = new old_double[M1*M2]{};
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
-        fflush(stdout);
+        // printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
+        // fflush(stdout);
         old_float v = x[i].contributions[origin].coefficient;
         heatmap1[(k-1)/M2*M2 + (k-1)%M2] += v;
      }
@@ -212,8 +351,8 @@ int main(int argc, char** argv) {
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
-        fflush(stdout);
+        // printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
+        // fflush(stdout);
         old_float v = x[i].contributions[origin].over_coefficient;
         heatmap2[(k-1)/M2*M2 + (k-1)%M2] += v;
      }
@@ -224,8 +363,8 @@ int main(int argc, char** argv) {
   for (int i = 0; i < N; ++i) {
      for (int origin=0; origin < x[i].contributions_size; ++origin) {
         uint64_t k = x[i].contributions[origin].symbol_id;
-        printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
-        fflush(stdout);
+        // printf("%lu, %d, %d, %d\n", k, i, (int) ((k-1)/M2), (int)((k-1)%M2));
+        // fflush(stdout);
         old_float v = x[i].contributions[origin].coefficient
             * (x[i].max_domain - x[i].min_domain)/x[i].value;
         heatmap3[(k-1)/M2*M2 + (k-1)%M2] += v;
@@ -276,13 +415,13 @@ int main(int argc, char** argv) {
         out << heatmap3[i*M2+M2-1] << '\n';
      }
      if ( out.is_open() ){
-        std::cout<<"File " << argv[3] <<" closed"<<std::endl;
+        std::cout<<"File " << argv[4] <<" closed"<<std::endl;
         out.close();
      }
   }
   delete [] heatmap3;
 #endif
-
+#endif
 #endif
 }
 
