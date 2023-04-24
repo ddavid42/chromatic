@@ -30,6 +30,10 @@ class QuadTreeElement {
    bool fHasContributions = false;
    old_double dContributions = 0.0;
    old_double dOverContributions = 0.0;
+#ifdef _ORIGINS_ERROR
+   old_double dErrorContributions = 0.0;
+   old_double dErrorOverContributions = 0.0;
+#endif
    double dSharedReference = 0.0;
 
   public:
@@ -46,16 +50,27 @@ class QuadTreeElement {
    old_double& getSContribution() { return dContributions; }
    const old_double& getOverContribution() const { return dOverContributions; }
    old_double& getSOverContribution() { return dOverContributions; }
+#ifdef _ORIGINS_ERROR
+   const old_double& getErrorContribution() const { return dErrorContributions; }
+   old_double& getSErrorContribution() { return dErrorContributions; }
+   const old_double& getErrorOverContribution() const { return dErrorOverContributions; }
+   old_double& getSErrorOverContribution() { return dErrorOverContributions; }
+#endif
    double& sharedReference() { return dSharedReference; }
    std::array<QuadTreeElement, SQUARE_EXP_SUBDIVISION>& content() { return *apaqteSubTrees.content; }
    QuadTreeElement& setPosition(int posX, int posY) { uPosX = posX; uPosY = posY; return *this; }
    QuadTreeElement& setWidth(int width, int length) { uWidth = width; uLength = length; return *this; }
    QuadTreeElement& setContribution(bool hasContribution, old_double contribution, old_double over_contribution) { fHasContributions = hasContribution; dContributions = contribution; dOverContributions = over_contribution; return *this; }
+   QuadTreeElement& setErrorContribution(old_double error)
+      {  dErrorContributions = error*dContributions; dErrorOverContributions = error*dOverContributions; return *this; }
+   QuadTreeElement& setErrorContribution(old_double error_contribution, old_double error_over_contribution)
+      {  dErrorContributions = error_contribution; dErrorOverContributions = error_over_contribution; return *this; }
    QuadTreeElement& setContribution(old_double contribution, old_double over_contribution)
       {  fHasContributions = true; dContributions = contribution; dOverContributions = over_contribution; return *this; }
    QuadTreeElement& setContribution()
       {  fHasContributions = true; return *this; }
 
+   bool isValid() const { return uPosX >= 0 && uPosY >= 0; }
    int getX() const { return uPosX; }
    int getY() const { return uPosY; }
    int getWidth() const { return uWidth; }
@@ -97,9 +112,12 @@ class WorkPlan {
          root.reset(new std::array<QuadTreeElement, SQUARE_EXP_SUBDIVISION>());
          for (int x = 0; x < EXP_SUBDIVISION; ++x) {
             for (int y = 0; y < EXP_SUBDIVISION; ++y) {
-               (*root)[x*EXP_SUBDIVISION + y].setPosition(shiftX + x*width, shiftY + y*length).
-                  setWidth((x+1)*width <= lines ? width : (lines - x*width),
-                        (y+1)*length <= columns ? length : (columns - y*length));
+               if (x*width < lines && y*length < columns)
+                  (*root)[x*EXP_SUBDIVISION + y].setPosition(shiftX + x*width, shiftY + y*length).
+                     setWidth((x+1)*width <= lines ? width : (lines - x*width),
+                           (y+1)*length <= columns ? length : (columns - y*length));
+               else
+                  (*root)[x*EXP_SUBDIVISION + y].setPosition(-1, -1);
             }
          }
       }
@@ -194,6 +212,22 @@ class WorkPlan {
                   current = cursor.back();
                }
                ++result;
+            } while (cursor.setToNext());
+         }
+         return result;
+      }
+   int getNonZeroCount() const
+      {  Cursor cursor(*this);
+         int result = 0;
+         if (cursor.setToFirst()) {
+            do {
+               QuadTreeElement* current = cursor.back();
+               while (current->hasContent()) {
+                  if (!cursor.setToNext()) return false;
+                  current = cursor.back();
+               }
+               if (current->getContribution() != 0.0 || current->getOverContribution() != 0.0)
+                  ++result;
             } while (cursor.setToNext());
          }
          return result;

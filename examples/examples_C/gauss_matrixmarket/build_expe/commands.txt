@@ -1,0 +1,186 @@
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DWITH_MATRIX=ON ..
+make
+
+# 1. pour avoir les temps de références avec 16 contributions max
+time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all.out data_allover.out data_error.out > log1.txt
+> 2m55,004s
+> 1.3g RAM
+
+# une majorité de résultat, dichotomie inutile finalement
+# 20 valeurs de X au-delà de 500
+# toutes ces valeurs sont obtenues comme la division d'un élément du vecteur B de départ
+#   par un seul coefficient de la matrice (valeur = 1.0) qui est ridiculement petit par
+#   rapport aux autres coefficients de la matrice (valeurs typiques = 5e+05)
+# voici les résultats: (décalage de 1 dans le fichier bcsstk14.mtx)
+#   1021 1021 1 1 510.5 -> 1021 1021  1.0000000000000e+00
+#     X1021 value: 1.021000e+03
+#           Idx : [-1, 5.105000e+02, 5.105000e+02]
+#                 [19302, 5.105000e+02, 5.105000e+02]
+#   1081 1081 1 1 540.5 -> 1081 1081  1.0000000000000e+00
+#     X1081 value: 1.081000e+03
+#           Idx : [-1, 5.405000e+02, 5.405000e+02]
+#                 [20527, 5.405000e+02, 5.405000e+02]
+#   1309 1309 1 1 654.5 -> 1309 1309  1.0000000000000e+00
+#     X1309 value: 1.309000e+03
+#           Idx : [-1, 6.545000e+02, 6.545000e+02]
+#                 [24799, 6.545000e+02, 6.545000e+02]
+#   1380 1380 1 1 690 -> 1380 1380  1.0000000000000e+00
+#     X1380 value: 1.380000e+03
+#           Idx : [-1, 6.900000e+02, 6.900000e+02]
+#                 [25949, 6.900000e+02, 6.900000e+02]
+#   1381 1381 1 1 690.5 -> 1381 1381  1.0000000000000e+00
+#     X1381 value: 1.381000e+03
+#           Idx : [-1, 6.905000e+02, 6.905000e+02]
+#                 [25950, 6.905000e+02, 6.905000e+02]
+#   1441 1441 1 1 720.5 -> 1441 1441  1.0000000000000e+00
+#     X1441 value: 1.441000e+03
+#           Idx : [-1, 7.205000e+02, 7.205000e+02]
+#                 [27045, 7.205000e+02, 7.205000e+02]
+#   1459 1459 1 1 729.5 -> 1459 1459  1.0000000000000e+00
+#     X1459 value: 1.459000e+03
+#           Idx : [-1, 7.295000e+02, 7.295000e+02]
+#                 [27268, 7.295000e+02, 7.295000e+02]
+#   1567 1567 1 1 783.5 -> 1567 1567  1.0000000000000e+00
+#     X1567 value: 1.567000e+03
+#           Idx : [-1, 7.835000e+02, 7.835000e+02]
+#                 [29119, 7.835000e+02, 7.835000e+02]
+#   1568 1568 1 1 784 -> 1568 1568  1.0000000000000e+00
+#     X1568 value: 1.568000e+03
+#           Idx : [-1, 7.840000e+02, 7.840000e+02]
+#                 [29120, 7.840000e+02, 7.840000e+02]
+#   1572 1572 1 1 786 -> 1572 1572  1.0000000000000e+00
+#     X1572 value: 1.572000e+03
+#           Idx : [-1, 7.860000e+02, 7.860000e+02]
+#                 [29127, 7.860000e+02, 7.860000e+02]
+#   1573 1573 1 1 786.5 -> 1573 1573  1.0000000000000e+00
+#     X1573 value: 1.573000e+03
+#           Idx : [-1, 7.865000e+02, 7.865000e+02]
+#                 [29128, 7.865000e+02, 7.865000e+02]
+#   1645 1645 1 1 822.5 -> 1645 1645  1.0000000000000e+00
+#     X1645 value: 1.645000e+03
+#           Idx : [-1, 8.225000e+02, 8.225000e+02]
+#                 [30449, 8.225000e+02, 8.225000e+02]
+#   1646 1646 1 1 823 -> 1646 1646  1.0000000000000e+00
+#     X1646 value: 1.646000e+03
+#           Idx : [-1, 8.230000e+02, 8.230000e+02]
+#                 [30450, 8.230000e+02, 8.230000e+02]
+#   1704 1704 1 1 852 -> 1704 1704  1.0000000000000e+00
+#     X1704 value: 1.704000e+03
+#           Idx : [-1, 8.520000e+02, 8.520000e+02]
+#                 [31377, 8.520000e+02, 8.520000e+02]
+#   1705 1705 1 1 852.5 -> 1705 1705  1.0000000000000e+00
+#     X1705 value: 1.705000e+03
+#           Idx : [-1, 8.525000e+02, 8.525000e+02]
+#                 [31378, 8.525000e+02, 8.525000e+02]
+#   1747 1747 1 1 873.5 -> 1747 1747  1.0000000000000e+00
+#     X1747 value: 1.747000e+03
+#           Idx : [-1, 8.735000e+02, 8.735000e+02]
+#                 [32027, 8.735000e+02, 8.735000e+02]
+#   1748 1748 1 1 874 -> 1748 1748  1.0000000000000e+00
+#     X1748 value: 1.748000e+03
+#           Idx : [-1, 8.740000e+02, 8.740000e+02]
+#                 [32028, 8.740000e+02, 8.740000e+02]
+#   1753 1753 1 1 876.5 -> 1753 1753  1.0000000000000e+00
+#     X1753 value: 1.753000e+03
+#           Idx : [-1, 8.765000e+02, 8.765000e+02]
+#                 [32049, 8.765000e+02, 8.765000e+02]
+#   1777 1777 1 1 888.5 -> 1777 1777  1.0000000000000e+00
+#     X1777 value: 1.777000e+03
+#           Idx : [-1, 8.885000e+02, 8.885000e+02]
+#                 [32402, 8.885000e+02, 8.885000e+02]
+#   1801 1801 1 1 900.5 -> 1801 1801  1.0000000000000e+00
+#     X1801 value: 1.801000e+03
+#           Idx : [-1, 9.005000e+02, 9.005000e+02]
+#                 [32620, 9.005000e+02, 9.005000e+02]
+#     
+# exemple d'erreur absolue importante, reste néanmoins de l'ordre de 1e-7 par rapport
+#   aux plus grandes valeurs de X => des erreurs de l'ordre de 6e-3 et une grosse erreur relative
+# X50: value = 6.93123e-05,
+#      error = 9.29739e-05
+#      contribs: [-2.54515e-07, 2.54515e-07]*id_320 # 51 19  4.0944268466020e+05
+#              + [ 5.45977e-07, 6.55688e-07]*id_344 # 21 21  2.2071200415570e+06
+#              + [ 3.75304e-07, 3.75304e-07]*id_362 # 51 21 -4.1053047408810e+05
+#              + [ 4.16689e-07, 7.05856e-07]*id_511 # 31 31  2.5998076493030e+06
+#              + [ 5.42293e-07, 5.42293e-07]*id_518 # 51 31 -6.8059677583870e+05
+#              + [ 4.46583e-07, 5.73568e-07]*id_545 # 33 33  2.7380979005040e+06
+#              + [ 5.10075e-07, 5.10075e-07]*id_550 # 51 33 -6.7977962540600e+05
+#              + [ 6.91802e-07, 1.19010e-06]*id_705 # 43 43  2.7375120499300e+06
+#              + [ 9.07340e-07, 9.07340e-07]*id_712 # 51 43 -6.7999047814650e+05
+#              + [ 6.78618e-07, 8.97579e-07]*id_744 # 45 45  2.5984827922460e+06
+#              + [ 7.88098e-07, 7.88098e-07]*id_749 # 51 45 -6.8243976728360e+05
+#              + [-1.50269e-06, 1.50269e-06]*id_812 # 49 49  2.1793404084770e+06
+#              + [-1.33966e-06, 1.33966e-06]*id_814 # 51 49  5.4170188466480e+05
+#              + [ 4.28821e-06, 4.28821e-06]*id_824 # 50 50  4.9683074704870e+04
+#              + [ 4.28821e-06, 4.28821e-06]*id_825 # 51 50 -8.1031545929370e+04
+#              + [ 3.46562e-05, 3.46562e-05]*id_834 # 51 51  2.1832803408660e+06
+#      + [2.32738e-05, 3.29031e-05]*id_unknown,
+# X67: value = 0.000118816, error = 9.8123e-05
+# X128: value = 0.000123624, error = 9.06709e-05
+# X318: value = 9.14417e-05, error = 9.20828e-05
+# X362: value = 0.000109346, error = 9.41183e-05
+# X372: value = 0.000100341, error = 9.45835e-05
+# X476: value = 0.000124549, error = 9.67252e-05
+# X488: value = 0.000122041, error = 9.55029e-05
+# X588: value = 0.000125821, error = 9.02808e-05
+# X619: value = 0.000447736, error = 9.70487e-05
+# X642: value = 0.000263581, error = 9.08072e-05
+# X672: value = 0.000252758, error = 9.93731e-05
+# X733: value = 0.00085219, error = 9.00134e-05
+# X744: value = 0.000732529, error = 9.03922e-05
+# X756: value = 0.000255384, error = 9.0923e-05
+# X758: value = 0.000258855, error = 9.49617e-05
+# X1070: value = 0.000219576, error = 9.59925e-05
+# X1088: value = 0.000331492, error = 9.7414e-05
+# X1153: value = 0.000537342, error=-9.18969e-05
+# X1286: value = 0.000321213, error = 9.06626e-05
+# X1622: value = 0.000378382, error = 9.07064e-05
+# X1647: value = -5.45219e-05, error = -9.54099e-05
+# X1727: value = -1.75632e-05, error = -9.05309e-05
+#
+# 1.1 augmentation du nombre de contributions, sachant que les 16 contributions sont atteintes dans la plupart des éléments de la matrices
+# changement du fichier include/origins.h en remplaçant 16 par 32
+time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all32.out data_allover32.out data_error32.out > log2.txt
+> real	3m25,562s
+> 2.4g RAM
+
+# visualisation des contributions rajoutées. Elle sont effectivement moins importantes que les contributions générales
+gvimdiff log1.txt log2.txt
+
+# changement du fichier include/origins.h en remplaçant 16 par 64
+time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all64.out data_allover64.out data_error64.out > log3.txt
+> real	5m48,539s
+> 4.8g RAM
+
+time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all128.out data_allover128.out data_error128.out > log4.txt
+> real	9m57,252s
+> 9.4g RAM
+
+# |---------------------------|
+# |  16  |  32  |  64  |  128 |
+# | 175s | 206s | 348s | 597s |
+# | 1.3g | 2.4g | 4.8g | 9.4g |
+# |---------------------------|
+
+# 1.2 dépendance de temps aux nombre d'éléments dans la matrice
+
+# changement du fichier include/origins.h en remplaçant 16 par 64
+time ./gauss_matrixmarket -x ../test100.mtx > log5.txt
+> real	0m0,088s
+time ./gauss_matrixmarket -x ../test200.mtx > log5.txt
+> real	0m0,478s  (x 5.43)
+time ./gauss_matrixmarket -x ../test400.mtx > log5.txt
+> real	0m3,820s  (x 8.0) (x 43.4)
+time ./gauss_matrixmarket -x ../test800.mtx > log5.txt
+> real	0m25,575s (x 6.7) (x 53.5) (x 291)
+time ./gauss_matrixmarket -x ../test1806.mtx > log5.txt
+> real	5m48,539s (x 13.6 pour x 2.25)
+
+# progression cubique en moyenne: ok, explicable par la taille réelle des vecteurs sur les 1ers calculs
+
+# 2. contributions à l'erreur
+
+time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all.out data_allover.out data_error.out > log1.txt
+tail log1.txt
+> The total error on the vector is 0.401271
+
+# individuellement, l'erreur sur chaque coefficient peut atteindre 6e-3

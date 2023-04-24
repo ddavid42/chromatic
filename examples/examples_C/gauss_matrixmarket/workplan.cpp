@@ -16,6 +16,8 @@ WorkPlan::setToNextBrother(std::vector<QuadTreeElement*>& stack) const {
       }
       if (!hasFound)
          return false;
+      while (iter != iterEnd && !iter->isValid())
+         ++iter;
       if (iter != iterEnd) {
          stack.push_back(&(*iter));
          return true;
@@ -54,6 +56,12 @@ WorkPlan::read(std::istream& in) {
          in >> contribution;
          in >> over_contribution;
          stack.back()->setContribution(contribution, over_contribution);
+#ifdef _ORIGINS_ERROR
+         old_double error_contribution, error_over_contribution;
+         in >> error_contribution;
+         in >> error_over_contribution;
+         stack.back()->setErrorContribution(error_contribution, error_over_contribution);
+#endif
          if (!setToNextBrother(stack))
             return false;
          if (stack.empty())
@@ -90,7 +98,11 @@ WorkPlan::write(std::ostream& out) const {
       }
       else {
          if (stack.back()->hasContribution())
-            out << "0 " << stack.back()->getContribution() << ' ' << stack.back()->getOverContribution() << ' ';
+            out << "0 " << stack.back()->getContribution() << ' ' << stack.back()->getOverContribution()
+#ifdef _ORIGINS_ERROR
+                << ' ' << stack.back()->getErrorContribution() << ' ' << stack.back()->getErrorOverContribution()
+#endif
+                << ' ';
          else
             out << "x";
          int len = stack.size();
