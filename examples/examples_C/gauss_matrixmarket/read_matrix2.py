@@ -32,7 +32,8 @@ with open(args.file_data, "r") as data_file:
             x = int(values[0])-1
             y = int(values[1])-1
             val = float(values[2])
-            citymap[x][y] = val
+            citymap[x][y] = abs(val)
+            citymap[y][x] = abs(val)
             i = i+1
             if i >= count:
                 break

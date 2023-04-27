@@ -1,10 +1,31 @@
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DWITH_MATRIX=ON ..
 make
 
+#0. 
+time ./a.out bcsstk13.mtx
+real	0m1,607s
+
+time ./gauss_float_error bcsstk13.mtx
+real	0m9,451s
+
+
 # 1. pour avoir les temps de références avec 16 contributions max
 time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all.out data_allover.out data_error.out > log1.txt
 > 2m55,004s
 > 1.3g RAM
+
+time ./gauss_matrixmarket -x ../bcsstk13.mtx data_sstk13_all_16.out data_sstk13_allover_16.out data_sstk13_error_16.out > log_sstk13_1.txt
+> 1.64g RAM
+> real	3m39,066s
+> real	7m10,745s
+
+The total error on the vector is 15.221
+The approximation on contribution of values is 9.29933, relatively on values = 693.283%
+The imprecision on contribution of values is 17.7203, relatively on values = 1321.09%
+
+The total error on the vector is 4.50863e-07
+The approximation on contribution of values is 1.27256e+10, relatively on values = 1.22304e+10%
+The imprecision on contribution of values is 1.27352e+10, relatively on values = 1.22397e+10%
 
 # une majorité de résultat, dichotomie inutile finalement
 # 20 valeurs de X au-delà de 500
@@ -29,7 +50,7 @@ time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all.out data_allover.out data_
 #           Idx : [-1, 6.900000e+02, 6.900000e+02]
 #                 [25949, 6.900000e+02, 6.900000e+02]
 #   1381 1381 1 1 690.5 -> 1381 1381  1.0000000000000e+00
-#     X1381 value: 1.381000e+03
+#     X1381 value: 1.381000e+03time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all.out data_allover.out data_error.out > log1.txt
 #           Idx : [-1, 6.905000e+02, 6.905000e+02]
 #                 [25950, 6.905000e+02, 6.905000e+02]
 #   1441 1441 1 1 720.5 -> 1441 1441  1.0000000000000e+00
@@ -143,23 +164,64 @@ time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all32.out data_allover32.out d
 > real	3m25,562s
 > 2.4g RAM
 
+time ./gauss_matrixmarket -x ../bcsstk13.mtx data_sstk13_all_32.out data_sstk13_allover_32.out data_sstk13_error_32.out > log_sstk13_2.txt
+> 3.15g RAM
+> real	5m33,610s
+> real	13m59,635s
+
+The total error on the vector is 15.221
+The approximation on contribution of values is 9.17747, relatively on values = 684.198%
+The imprecision on contribution of values is 17.5985, relatively on values = 1312%
+
+The total error on the vector is 4.50863e-07
+The approximation on contribution of values is 3.36709e+10, relatively on values = 3.23607e+10%
+The imprecision on contribution of values is 3.36805e+10, relatively on values = 3.23699e+10%
+
 # visualisation des contributions rajoutées. Elle sont effectivement moins importantes que les contributions générales
 gvimdiff log1.txt log2.txt
 
 # changement du fichier include/origins.h en remplaçant 16 par 64
 time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all64.out data_allover64.out data_error64.out > log3.txt
 > real	5m48,539s
-> 4.8g RAM
+> 6.16g RAM
+
+time ./gauss_matrixmarket -x ../bcsstk13.mtx data_sstk13_all_64.out data_sstk13_allover_64.out data_sstk13_error_64.out > log_sstk13_3.txt
+> 6.16g RAM
+> real	7m57,338s
+
+The total error on the vector is 15.221
+The approximation on contribution of values is 9.06838, relatively on values = 676.065%
+The imprecision on contribution of values is 17.4894, relatively on values = 1303.87%
 
 time ./gauss_matrixmarket -x ../bcsstk14.mtx data_all128.out data_allover128.out data_error128.out > log4.txt
 > real	9m57,252s
 > 9.4g RAM
+
+time ./gauss_matrixmarket -x ../bcsstk13.mtx data_sstk13_all_128.out data_sstk13_allover_128.out data_sstk13_error_128.out > log_sstk13_4.txt
+> 12.2g RAM
+> real	10m59,181s
+
+The total error on the vector is 15.221
+The approximation on contribution of values is 8.97196, relatively on values = 668.877%
+The imprecision on contribution of values is 17.393, relatively on values = 1296.68%
 
 # |---------------------------|
 # |  16  |  32  |  64  |  128 |
 # | 175s | 206s | 348s | 597s |
 # | 1.3g | 2.4g | 4.8g | 9.4g |
 # |---------------------------|
+
+# |-------------------------------|
+# |  16   |  32   |  64   |  128  |
+# | 220s  | 333s  | 477s  | 659s  |
+# | 1.64g | 3.15g | 6.16g | 12.2g |
+# |-------------------------------|
+
+# |-------------------------------|
+# |  16   |  32   |  64   |  128  |
+# | 430s  | 840s  | 477s  | 659s  |
+# | 1.64g | 3.15g | 6.16g | 12.2g |
+# |-------------------------------|
 
 # 1.2 dépendance de temps aux nombre d'éléments dans la matrice
 
@@ -184,3 +246,20 @@ tail log1.txt
 > The total error on the vector is 0.401271
 
 # individuellement, l'erreur sur chaque coefficient peut atteindre 6e-3
+
+#3. Subdivisions
+
+time ./gauss_matrixmarket init_map_bcsstk13_1.txt out_map_bcsstk13_1.txt ../bcsstk13.mtx data_bcsstk13_1.out data_bcsstk13_1b.out data_bcsstk13_error_1.out > log_bcsstk13_1.txt
+real	3m50,378s
+
+time ./gauss_matrixmarket init_map_bcsstk13_2.txt out_map_bcsstk13_2.txt ../bcsstk13.mtx data_bcsstk13_2.out data_bcsstk13_2b.out data_bcsstk13_error_2.out > log_bcsstk13_2.txt
+real	3m23,243s
+
+time ./gauss_matrixmarket init_map_bcsstk13_3.txt out_map_bcsstk13_3.txt ../bcsstk13.mtx data_bcsstk13_3.out data_bcsstk13_3b.out data_bcsstk13_error_3.out > log_bcsstk13_3.txt
+real	3m23,243s
+
+time ./gauss_matrixmarket init_map_bcsstk13_4.txt out_map_bcsstk13_4.txt ../bcsstk13.mtx data_bcsstk13_4.out data_bcsstk13_4b.out data_bcsstk13_error_4.out > log_bcsstk13_4.txt
+real	6m55,718s
+
+
+

@@ -54,6 +54,7 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a){
     i-=1; j-=1;
     // printf("%d %d %d %e \n",k,i,j,v);
     a[i][j]=double(v);
+    a[j][i]=double(v);
   }
 
   if (in !=stdin) fclose(in);
@@ -66,8 +67,8 @@ int main(int argc, char** argv) {
   clock_t start, end;
 
   // Read MatrixMarket file passed as an input argument 
-  if (argc < 3){
-		fprintf(stderr, "Usage: %s [matrix-market-input-filename] [chromatic-output-data]\n", argv[0]);
+  if (argc < 2){
+		fprintf(stderr, "Usage: %s [matrix-market-input-filename]\n", argv[0]);
 		exit(1);
 	} 
   
@@ -86,7 +87,7 @@ int main(int argc, char** argv) {
   start = clock(); /* Lancement de la mesure */
      
   // Applying Gauss Elimination
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < N; ++i) {
     printf("Gauss, line :%d\n",i);
     if (a[i][i] == 0.0){
       printf("Gaussian elemination not possible a[i][i] == 0.0 for i= %d\n",i);
@@ -94,7 +95,7 @@ int main(int argc, char** argv) {
     }
     for (int j = i+1; j < N; ++j) {
       double ratio = a[j][i]/a[i][i];
-      for (int k = 0; k < N+1; ++k)
+      for (int k = i+1; k < N+1; ++k)
         a[j][k] = a[j][k] - ratio * a[i][k];
     }
   }

@@ -151,6 +151,7 @@ if (plan) {
 #else
     a[i][j]= v;
 #endif
+    a[j][i] = a[i][j];
   }
 
 }
@@ -174,6 +175,7 @@ else {
 #else
     a[i][j]= v;
 #endif
+    a[j][i]=a[i][j];
   }
 }
 

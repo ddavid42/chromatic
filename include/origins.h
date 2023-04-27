@@ -631,7 +631,10 @@ OriginVector<Type, N>::addContribution(const OriginVector<Type, N>& source,
             new_origins[new_origins_size].coefficient += source.contributions[sourceIndex].coefficient;
          else
             new_origins[new_origins_size].coefficient -= source.contributions[sourceIndex].coefficient;
-         new_origins[new_origins_size].over_coefficient += source.contributions[sourceIndex].over_coefficient;
+         if (contributions[thisIndex].is_atomic_var && source.contributions[thisIndex].is_atomic_var)
+            new_origins[new_origins_size].over_coefficient = std::fabs(new_origins[new_origins_size].coefficient);
+         else
+            new_origins[new_origins_size].over_coefficient += source.contributions[sourceIndex].over_coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -755,7 +758,7 @@ OriginVector<Type, N>::addAssign(const OriginVector<Type, N>& source, bool is_pl
    }
 #endif
 #ifdef _ORIGINS_ERROR
-   double newError = -EFT::TwoSum(value, source.value, newValue);
+   double newError = -EFT::TwoSum(value, is_plus ? source.value : -source.value, newValue);
    accumulated_error += source.accumulated_error;
    accumulated_error += newError;
 #endif
@@ -843,9 +846,13 @@ OriginVector<Type, N>::multContribution(const OriginVector<Type, N>& source,
          new_origins[new_origins_size].coefficient
             = source.value*0.5*contributions[thisIndex].coefficient
                + value*0.5*source.contributions[sourceIndex].coefficient;
-         new_origins[new_origins_size].over_coefficient
-            = std::fabs(source.value)*0.5*contributions[thisIndex].over_coefficient
-               + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient;
+         if (contributions[thisIndex].is_atomic_var && source.contributions[thisIndex].is_atomic_var)
+            new_origins[new_origins_size].over_coefficient
+               = std::fabs(new_origins[new_origins_size].coefficient);
+         else
+            new_origins[new_origins_size].over_coefficient
+               = std::fabs(source.value)*0.5*contributions[thisIndex].over_coefficient
+                  + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -1041,9 +1048,12 @@ OriginVector<Type, N>::divContribution(const OriginVector<Type, N>& source,
          new_origins[new_origins_size].coefficient
             = 0.5*contributions[thisIndex].coefficient/source.value
                   + value*0.5*source.contributions[sourceIndex].coefficient/(source.value*source.value);
-         new_origins[new_origins_size].over_coefficient
-            = 0.5*contributions[thisIndex].over_coefficient/std::fabs(source.value)
-                  + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient/(source.value*source.value);
+         if (contributions[thisIndex].is_atomic_var && source.contributions[thisIndex].is_atomic_var)
+            new_origins[new_origins_size].over_coefficient = std::fabs(new_origins[new_origins_size].coefficient);
+         else
+            new_origins[new_origins_size].over_coefficient
+               = 0.5*contributions[thisIndex].over_coefficient/std::fabs(source.value)
+                     + std::fabs(value)*0.5*source.contributions[sourceIndex].over_coefficient/(source.value*source.value);
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -1320,8 +1330,11 @@ OriginVector<Type, N>::atan2(const OriginVector<Type, N>& source,
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*contributions[thisIndex].coefficient + 0.5*source.contributions[sourceIndex].coefficient;
-         new_origins[new_origins_size].over_coefficient
-            = 0.5*contributions[thisIndex].over_coefficient + 0.5*source.contributions[sourceIndex].over_coefficient;
+         if (contributions[thisIndex].is_atomic_var && source.contributions[thisIndex].is_atomic_var)
+            new_origins[new_origins_size].over_coefficient = std::fabs(new_origins[new_origins_size].coefficient);
+         else
+            new_origins[new_origins_size].over_coefficient
+               = 0.5*contributions[thisIndex].over_coefficient + 0.5*source.contributions[sourceIndex].over_coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -1386,8 +1399,11 @@ OriginVector<Type, N>::pow(const OriginVector<Type, N>& source,
          new_origins[new_origins_size] = contributions[thisIndex];
          new_origins[new_origins_size].coefficient
             = 0.5*contributions[thisIndex].coefficient + 0.5*source.contributions[sourceIndex].coefficient;
-         new_origins[new_origins_size].over_coefficient
-            = 0.5*contributions[thisIndex].over_coefficient + 0.5*source.contributions[sourceIndex].over_coefficient;
+         if (contributions[thisIndex].is_atomic_var && source.contributions[thisIndex].is_atomic_var)
+            new_origins[new_origins_size].over_coefficient = std::fabs(new_origins[new_origins_size].coefficient);
+         else
+            new_origins[new_origins_size].over_coefficient
+               = 0.5*contributions[thisIndex].over_coefficient + 0.5*source.contributions[sourceIndex].over_coefficient;
          ++new_origins_size;
          ++thisIndex;
          ++sourceIndex;
@@ -1437,9 +1453,9 @@ OriginVector<Type, N>::powAssign(const OriginVector<Type, N>& source) {
 }
 
 struct double_st;
-struct float_st : public OriginVector<float, 16> {
+struct float_st : public OriginVector<float, 64> {
   private:
-   typedef OriginVector<float, 16> inherited;
+   typedef OriginVector<float, 64> inherited;
 
   public:
    float_st() = default;
@@ -1449,9 +1465,9 @@ struct float_st : public OriginVector<float, 16> {
    float_st(const double_st& source);
 };
 
-struct double_st : public OriginVector<double, 16> {
+struct double_st : public OriginVector<double, 64> {
   private:
-   typedef OriginVector<double, 16> inherited;
+   typedef OriginVector<double, 64> inherited;
 
   public:
    double_st() = default;

@@ -33,8 +33,9 @@ with open(args.file_data, "r") as data_file:
             y = int(values[1])
             width = int(values[2])
             length = int(values[3])
-            val = float(values[4])
+            val = abs(float(values[4]))
             data[x * columns + y] = (width, length, val)
+            data[y * columns + x] = (width, length, val)
             i = i+1
             if i >= count:
                 break
