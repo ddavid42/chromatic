@@ -9,6 +9,7 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 #include <cstdlib>
 #include <ctype.h>
 #include "eft.h"
@@ -1453,9 +1454,9 @@ OriginVector<Type, N>::powAssign(const OriginVector<Type, N>& source) {
 }
 
 struct double_st;
-struct float_st : public OriginVector<float, 64> {
+struct float_st : public OriginVector<float, 16> {
   private:
-   typedef OriginVector<float, 64> inherited;
+   typedef OriginVector<float, 16> inherited;
 
   public:
    float_st() = default;
@@ -1465,9 +1466,9 @@ struct float_st : public OriginVector<float, 64> {
    float_st(const double_st& source);
 };
 
-struct double_st : public OriginVector<double, 64> {
+struct double_st : public OriginVector<double, 16> {
   private:
-   typedef OriginVector<double, 64> inherited;
+   typedef OriginVector<double, 16> inherited;
 
   public:
    double_st() = default;

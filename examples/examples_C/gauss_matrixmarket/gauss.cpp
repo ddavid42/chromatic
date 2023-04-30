@@ -5,6 +5,8 @@
 #include <vector>
 #include <map>
 #include <time.h>
+#include <algorithm>
+#include <cassert>
 #include "mmio.h"
 #include "workplan.h"
 
@@ -66,7 +68,218 @@ setToSymbolId(uint64_t symbol, WorkPlan::Cursor& cursor) {
 }
 
 typedef std::vector<std::pair<int, int>> IdDictionary;
-void read_matrix(char *input, std::vector< std::vector<double> >& a, WorkPlan* plan, IdDictionary* dictionary){
+
+bool isLessIndex(const std::pair<int, double>& first, const std::pair<int, double>& second)
+   { return first.first < second.first; }
+
+class SparseMatrix {
+  public:
+   int lines = 0, columns = 0;
+  private:
+   std::vector< std::vector<std::pair<int, double>> > content;
+
+  public:
+   SparseMatrix() = default;
+   SparseMatrix(const SparseMatrix&) = default;
+   SparseMatrix(SparseMatrix&&) = default;
+   SparseMatrix& operator=(const SparseMatrix&) = default;
+   SparseMatrix& operator=(SparseMatrix&&) = default;
+
+   void setSize(int line, int column) { content.resize(line); lines = line; columns = column; }
+   int getLines() const { return lines; }
+   int getColumns() const { return columns; }
+   double& set(int i, int j, double value)
+      {  auto& line = content[i];
+         double* result;
+         if (line.empty()) {
+            line.push_back(std::make_pair(j, value));
+            result = &line.back().second;
+         }
+         else {
+            auto columnFound = std::lower_bound(line.begin(), line.end(), std::make_pair(j, double(0.0)), &isLessIndex);
+            if (columnFound == line.end() || columnFound->first > j)
+               columnFound = line.insert(columnFound, std::make_pair(j, value));
+            else
+               columnFound->second = value;
+            result = &columnFound->second;
+         }
+         return *result;
+      }
+   class ColumnIterator {
+     private:
+      std::vector<std::pair<int, double>>::const_iterator iter, iterEnd;
+      int beforeIter;
+      int columns;
+
+     public:
+      ColumnIterator(const std::vector<std::pair<int, double>>& ref, int acolumns, bool isFirstValue=false)
+         :  iter(ref.begin()), iterEnd(ref.end()),
+            beforeIter((ref.empty() || isFirstValue) ? 0 : ref[0].first), columns(acolumns) {}
+      ColumnIterator(const std::vector<std::pair<int, double>>& ref, int j, int acolumns)
+         :  iter(ref.begin()), iterEnd(ref.end()),
+            beforeIter(ref.empty() ? 0 : ref[0].first), columns(acolumns)
+         { iter = std::lower_bound(iter, iterEnd, std::make_pair(j, double(0.0)), &isLessIndex);
+           if (iter == iterEnd)
+              beforeIter = columns-j;
+           else
+              beforeIter = iter->first-j;
+         }
+      ColumnIterator(const ColumnIterator&) = default;
+      ColumnIterator& operator=(const ColumnIterator&) = default;
+
+      double getValue() const
+         {  if (beforeIter) return 0.0;
+            return iter->second;
+         }
+      bool hasValue() const { return iter != iterEnd && !beforeIter; }
+      const double& getSValue() const { assert(!beforeIter); return iter->second; }
+      bool isValid() const { return iter != iterEnd || beforeIter; }
+      ColumnIterator& operator++()
+         {  assert(isValid());
+            if (beforeIter) --beforeIter;
+            else {
+               auto oldIter = iter;
+               ++iter;
+               if (iter == iterEnd)
+                  beforeIter = columns - oldIter->first - 1;
+               else
+                  beforeIter = iter->first - oldIter->first - 1;
+            }
+            return *this;
+         }
+      int getIndex() const { assert(isValid()); return ((iter != iterEnd) ? iter->first : columns) - beforeIter; }
+      ColumnIterator& setToNextValue()
+         {  assert(isValid());
+            if (beforeIter) beforeIter = 0;
+            else ++iter;
+            return *this;
+         }
+   };
+   class RefColumnIterator {
+     private:
+      std::vector<std::pair<int, double>>& ref;
+      std::vector<std::pair<int, double>>::iterator iter, iterEnd;
+      int beforeIter;
+      int columns;
+
+     public:
+      RefColumnIterator(std::vector<std::pair<int, double>>& aref, int acolumns)
+         :  ref(aref), iter(ref.begin()), iterEnd(ref.end()) {}
+      RefColumnIterator(std::vector<std::pair<int, double>>& aref, int j, int acolumns)
+         :  ref(aref), iter(aref.begin()), iterEnd(aref.end()),
+            beforeIter(aref.empty() ? 0 : aref[0].first), columns(acolumns)
+         { iter = std::lower_bound(iter, iterEnd, std::make_pair(j, double(0.0)), &isLessIndex);
+           if (iter == iterEnd)
+              beforeIter = columns-j;
+           else
+              beforeIter = iter->first-j;
+         }
+      RefColumnIterator(const RefColumnIterator&) = default;
+      RefColumnIterator& operator=(const RefColumnIterator&) = default;
+
+      double& getSValue()
+         {  int index = (iter == iterEnd) ? columns : iter->first;
+            if (beforeIter) {
+               index -= beforeIter;
+               iter = ref.insert(iter, std::make_pair(index, double(0.0)));
+               iterEnd = ref.end();
+               beforeIter = 0;
+            }
+            return iter->second;
+         }
+      bool hasValue() const { return iter != iterEnd && !beforeIter; }
+      bool isValid() const { return iter != iterEnd || beforeIter; }
+      RefColumnIterator& operator++()
+         {  assert(isValid());
+            if (beforeIter) --beforeIter;
+            else {
+               auto oldIter = iter;
+               ++iter;
+               if (iter == iterEnd)
+                  beforeIter = columns - oldIter->first - 1;
+               else
+                  beforeIter = iter->first - oldIter->first - 1;
+            }
+            return *this;
+         }
+      RefColumnIterator& setToNextIndex(int index)
+         {  assert(isValid());
+            int currentIndex = ((iter != iterEnd) ? iter->first : columns) - beforeIter;
+            int shift = index - currentIndex;
+            assert(shift > 0);
+            while (beforeIter < shift && iter != iterEnd) {
+               shift -= (beforeIter+1);
+               int oldIndex = iter->first;
+               ++iter;
+               beforeIter = ((iter != iterEnd) ? iter->first : columns) - oldIndex - 1;
+            }
+            if (beforeIter >= shift)
+               beforeIter -= shift;
+            else
+               beforeIter = 0;
+            return *this;
+         }
+
+   };
+   class ReverseColumnIterator {
+     private:
+      std::vector<std::pair<int, double>>::const_reverse_iterator iter, iterEnd;
+      int afterIter;
+      int columns;
+
+     public:
+      ReverseColumnIterator(const std::vector<std::pair<int, double>>& ref, int acolumns)
+         :  iter(ref.rbegin()), iterEnd(ref.rend()),
+            afterIter(ref.empty() ? 0 : (acolumns-ref.back().first-1)), columns(acolumns) {}
+      ReverseColumnIterator(const ReverseColumnIterator&) = default;
+      ReverseColumnIterator& operator=(const ReverseColumnIterator&) = default;
+
+      double getValue() const
+         {  if (afterIter) return 0.0;
+            return iter->second;
+         }
+      bool hasValue() const { return iter != iterEnd && !afterIter; }
+      const double& getSValue() const { return iter->second; }
+      bool isValid() const { return iter != iterEnd || afterIter; }
+      ReverseColumnIterator& operator++()
+         {  assert(isValid());
+            if (afterIter) --afterIter;
+            else {
+               auto oldIter = iter;
+               ++iter;
+               if (iter == iterEnd)
+                  afterIter = oldIter->first - 1;
+               else
+                  afterIter = oldIter->first - iter->first - 1;
+            }
+            return *this;
+         }
+      int getIndex() const { assert(isValid()); return ((iter != iterEnd) ? iter->first : 0) + afterIter; }
+      ReverseColumnIterator& setToNextValue()
+         {  assert(isValid());
+            if (afterIter) afterIter = 0;
+            else ++iter;
+            return *this;
+         }
+   };
+
+   ColumnIterator getColumnsStartingAt(int i, int j) const
+     {  auto& line = content[i];
+        if (!line.empty() && line.front().first == j)
+          return ColumnIterator(line, columns, true);
+        return ColumnIterator(line, j, columns);
+     }
+   RefColumnIterator getRefColumnsStartingAt(int i, int j)
+     {  auto& line = content[i];
+        return RefColumnIterator(line, j, columns);
+     }
+   ReverseColumnIterator getReverseColumns(int i) const
+     {  auto& line = content[i];
+        return ReverseColumnIterator(line, columns);
+     }
+};
+
+void read_matrix(char *input, SparseMatrix& a, WorkPlan* plan, IdDictionary* dictionary){
   FILE *in;
   MM_typecode matcode;
   int ret_code;
@@ -99,10 +312,8 @@ void read_matrix(char *input, std::vector< std::vector<double> >& a, WorkPlan* p
     exit(4);  
   }
 
+  a.setSize(M, N+1);
   /* reserve memory for matrices a => (M)x(M+1)*/
-  a.resize(M);
-  for(int i = 0 ; i < M ; ++i)
-    a[i].resize(M+1);
 
 if (plan) {
 
@@ -140,18 +351,19 @@ if (plan) {
       throw 0;
     if (cursor.elementAt()->hasContent())
       throw 0;
+    double* val;
     if (cursor.elementAt()->hasContribution())
-      a[i][j] = v;
+      val = &a.set(i, j, v);
     else {
-      a[i][j]=cursor.elementAt()->sharedReference();
-      a[i][j].value = v;
-      a[i][j].contributions[0].coefficient = v;
-      a[i][j].contributions[0].over_coefficient = std::fabs(v);
+      val = &a.set(i, j, cursor.elementAt()->sharedReference());
+      val->value = v;
+      val->contributions[0].coefficient = v;
+      val->contributions[0].over_coefficient = std::fabs(v);
     }
 #else
-    a[i][j]= v;
+    val = &a.set(i, j, v);
 #endif
-    a[j][i] = a[i][j];
+    a.set(j, i, *val);
   }
 
 }
@@ -169,17 +381,18 @@ else {
     
     // printf("%d %d %d %e \n",k,i,j,v);
 #if defined(_ORIGINS) && defined(_MATRIX)
-    a[i][j]=double(v, true);
-    a[i][j].contributions[0].is_atomic_var = true;
+    double* val = &a.set(i, j, double(v, true));
+    val->contributions[0].is_atomic_var = true;
     dictionary->push_back(std::make_pair(i, j));
 #else
-    a[i][j]= v;
+    double* val = &a.set(i, j, v);
 #endif
-    a[j][i]=a[i][j];
+    a.set(j, i, *val);
   }
 }
 
   if (in !=stdin) fclose(in);
+
 }
 
 int main(int argc, char** argv) {
@@ -194,7 +407,7 @@ int main(int argc, char** argv) {
 		exit(1);
 	} 
   
-  std::vector<std::vector<double>> a;
+  SparseMatrix a;
   WorkPlan theplan;
   WorkPlan* plan = &theplan;
   if (strcmp(argv[1], "-x") == 0) {
@@ -209,7 +422,7 @@ int main(int argc, char** argv) {
 
   IdDictionary dictionary;
   read_matrix(argv[3], a, plan, &dictionary);
-  N = a.size();
+  N = a.getLines();
   double x[N];
   memset(x, 0, sizeof(x));
 
@@ -224,10 +437,9 @@ int main(int argc, char** argv) {
       if (i >= N)
         break;
 #if defined(_ORIGINS) && defined(_INPUT_VECTOR)
-      a[i][N] = ref_val;
-      a[i][N].value = i;
+      a.set(i, N, ref_val)->value = i;
 #else
-      a[i][N] = i;
+      a.set(i, N, i);
 #endif
     }
   }
@@ -237,26 +449,43 @@ int main(int argc, char** argv) {
   for (int i = 0; i < N; ++i) {
     printf("Gauss, line :%d\n",i);
     fflush(stdout);
-    if (a[i][i] == 0.0){
+    SparseMatrix::ColumnIterator firstColumnIterator = a.getColumnsStartingAt(i, i);
+    if (!firstColumnIterator.hasValue()) {
       printf("Gaussian elemination not possible a[i][i] == 0.0 for i= %d\n",i);
       exit(1);
     }
     for (int j = i+1; j < N; ++j) {
-      double ratio = a[j][i]/a[i][i];
-      for (int k = i+1; k < N+1; ++k)
-        a[j][k] -= ratio * a[i][k];
+      SparseMatrix::RefColumnIterator secondColumnIterator = a.getRefColumnsStartingAt(j, i);
+      if (!secondColumnIterator.hasValue())
+        continue;
+      double ratio = secondColumnIterator.getSValue() / firstColumnIterator.getValue(); // a[j][i]/a[i][i];
+      if (ratio == 0.0)
+         continue;
+      auto columnIterator = firstColumnIterator;
+      while (columnIterator.setToNextValue().isValid()) {
+        secondColumnIterator.setToNextIndex(columnIterator.getIndex());
+        secondColumnIterator.getSValue() -= ratio * columnIterator.getValue();
+      }
     }
   }
 
   // Back Substitution
-  x[N-1] = a[N-1][N]/a[N-1][N-1];
+  SparseMatrix::ReverseColumnIterator reverseColumnIterator = a.getReverseColumns(N-1);
+  double res = reverseColumnIterator.getValue();
+  ++reverseColumnIterator;
+  
+  x[N-1] = res/reverseColumnIterator.getValue();
 
   for (int i = N-2; i >= 0; --i) {
-    x[i] = a[i][N];
-    for (int j = i+1; j < N; ++j)
-       x[i] = x[i] - a[i][j]*x[j];
-    x[i] = x[i]/a[i][i];
+    SparseMatrix::ReverseColumnIterator reverseColumnIterator = a.getReverseColumns(i);
+    x[i] = reverseColumnIterator.getValue();
+    int index;
+    while (reverseColumnIterator.setToNextValue().isValid()
+         && (index = reverseColumnIterator.getIndex()) > i)
+       x[i] -= x[reverseColumnIterator.getIndex()]*reverseColumnIterator.getValue();
+    x[i] /= (index == i) ? reverseColumnIterator.getValue() : double(0.0);
   }
+
   end = clock();  /* Arret de la mesure */
 #ifdef _ORIGINS
   printf("\nTIME: %lf",((old_double)end - start) / CLOCKS_PER_SEC);
@@ -391,7 +620,7 @@ else {
      }
      }
      else {
-     out << a.size() << ' ' << a[0].size() << ' ' << heatmap.size() << '\n';
+     out << a.getLines() << ' ' << a.getColumns() << ' ' << heatmap.size() << '\n';
      for (const auto& element : heatmap) {
          if (element.second.contribution_value != 0.0 || element.second.contribution_over_value != 0.0)
             out << dictionary[element.first].first << ' ' << dictionary[element.first].second
@@ -427,7 +656,7 @@ else {
      }
      }
      else {
-     out << a.size() << ' ' << a[0].size() << ' ' << heatmap.size() << '\n';
+     out << a.getLines() << ' ' << a.getColumns() << ' ' << heatmap.size() << '\n';
      for (const auto& element : heatmap) {
          if (element.second.contribution_value != 0.0 || element.second.contribution_over_value != 0.0)
             out << dictionary[element.first].first << ' ' << dictionary[element.first].second
@@ -464,7 +693,7 @@ else {
      }
      }
      else {
-     out << a.size() << ' ' << a[0].size() << ' ' << heatmap.size() << '\n';
+     out << a.getLines() << ' ' << a.getColumns() << ' ' << heatmap.size() << '\n';
      for (const auto& element : heatmap) {
          if (element.second.contribution_error != 0.0)
             out << dictionary[element.first].first << ' ' << dictionary[element.first].second
